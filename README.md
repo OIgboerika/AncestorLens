@@ -15,7 +15,7 @@ Originally targeting Nigeria due to its strong oral history traditions, Ancestor
 
 ## 🔗 Repository
 
-[GitHub Repository](https://github.com/[your-username]/AncestorLens) - _Note: Please update this link with your actual GitHub repository URL_
+[GitHub Repository](https://github.com/OIgboerika/AncestorLens.git)
 
 ## 🛠️ Tech Stack
 
