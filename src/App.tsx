@@ -62,7 +62,12 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
-      <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
+
+      {/* Layout parent with Outlet */}
+      <Route element={<Layout />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Route>
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

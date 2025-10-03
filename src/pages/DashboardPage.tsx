@@ -1,196 +1,121 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { 
-  Users, 
-  MapPin, 
-  Mic, 
-  Plus, 
-  Calendar, 
-  Upload,
-  Heart,
+import {
   TreePine,
-  BookOpen,
+  MapPin,
+  Mic,
+  Shield,
   ArrowRight,
-  Share2,
-  Edit
+  ChevronRight,
+  Image as Camera,
 } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 
 const DashboardPage = () => {
-  const [stats] = useState({
-    familyMembers: 24,
-    burialSites: 8,
-    oralMemories: 12,
-    privacyLevel: 'Private'
-  })
+  const userFirstName = 'Onochie'
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: 'family',
-      title: 'Added new family member: Sarah Johnson',
-      time: '2 hours ago',
-      icon: Users
-    },
-    {
-      id: 2,
-      type: 'burial',
-      title: 'Updated burial site: Great Grandfather\'s grave',
-      time: '1 day ago',
-      icon: MapPin
-    },
-    {
-      id: 3,
-      type: 'memory',
-      title: 'Uploaded oral story: The Journey West',
-      time: '3 days ago',
-      icon: Mic
-    }
+  const activities = [
+    { id: 1, icon: Camera, text: 'John Adebayo added a new photo to the Family Tree.', time: '5 minutes ago' },
+    { id: 2, icon: MapPin, text: "New burial site for 'Mama Ayisha' marked by Sarah.", time: '2 hours ago' },
+    { id: 3, icon: Mic, text: "Afolabi uploaded an audio memory of grandfather's stories.", time: 'Yesterday' },
+    { id: 4, icon: TreePine, text: 'Update suggested for the Adewale family branch.', time: '3 days ago' },
+    { id: 5, icon: Shield, text: 'AncestorLens gift subscription activated for cousin Emeka.', time: 'Last week' },
   ]
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-ancestor-dark mb-2">Welcome back, John</h1>
-        <p className="text-gray-600">Manage your family heritage and preserve memories</p>
+      {/* Welcome banner */}
+      <div className="rounded-xl border border-orange-100 bg-orange-50 text-ancestor-dark p-6 sm:p-8 mb-8">
+        <p className="text-sm font-semibold text-ancestor-dark/80">Your Ancestry, Your Story.</p>
+        <h1 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight">Welcome, {userFirstName}!</h1>
+        <p className="mt-3 text-sm sm:text-base text-ancestor-dark/70 max-w-3xl">
+          Dive into your family’s rich history, preserve cherished memories, and connect with your roots.
+        </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card hoverable={false}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Family Members</p>
-              <p className="text-2xl font-bold text-ancestor-primary">{stats.familyMembers}</p>
+      {/* Feature cards row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card className="border border-gray-200">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-ancestor-primary/10 text-ancestor-primary flex items-center justify-center">
+              <TreePine className="w-5 h-5" />
             </div>
-            <div className="w-12 h-12 bg-ancestor-primary bg-opacity-10 rounded-full flex items-center justify-center">
-              <Users className="w-6 h-6 text-ancestor-primary" />
-            </div>
-          </div>
-        </Card>
-
-        <Card hoverable={false}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Burial Sites</p>
-              <p className="text-2xl font-bold text-ancestor-secondary">{stats.burialSites}</p>
-            </div>
-            <div className="w-12 h-12 bg-ancestor-secondary bg-opacity-10 rounded-full flex items-center justify-center">
-              <MapPin className="w-6 h-6 text-ancestor-secondary" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-ancestor-dark">Manage Family Tree</h3>
+              <p className="text-sm text-gray-600 mt-1">Add members, view relationships, and upload ancestral records.</p>
+              <Link to="/family-tree" className="inline-flex items-center mt-4 px-4 py-2 rounded-md border border-ancestor-primary text-ancestor-primary hover:bg-ancestor-primary hover:text-white transition-colors">
+                View Family Tree
+              </Link>
             </div>
           </div>
         </Card>
 
-        <Card hoverable={false}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Oral Memories</p>
-              <p className="text-2xl font-bold text-ancestor-accent">{stats.oralMemories}</p>
+        <Card className="border border-gray-200">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-ancestor-secondary/10 text-ancestor-secondary flex items-center justify-center">
+              <MapPin className="w-5 h-5" />
             </div>
-            <div className="w-12 h-12 bg-ancestor-accent bg-opacity-10 rounded-full flex items-center justify-center">
-              <Mic className="w-6 h-6 text-ancestor-accent" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-ancestor-dark">Explore Burial Sites</h3>
+              <p className="text-sm text-gray-600 mt-1">Locate and document important family burial places on an interactive map.</p>
+              <Link to="/burial-sites" className="inline-flex items-center mt-4 px-4 py-2 rounded-md border border-ancestor-secondary text-ancestor-secondary hover:bg-ancestor-secondary hover:text-white transition-colors">
+                Explore Sites
+              </Link>
             </div>
           </div>
         </Card>
 
-        <Card hoverable={false}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Privacy Level</p>
-              <p className="text-lg font-semibold text-gray-800">{stats.privacyLevel}</p>
+        <Card className="border border-gray-200">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-ancestor-accent/10 text-ancestor-accent flex items-center justify-center">
+              <Mic className="w-5 h-5" />
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <Heart className="w-6 h-6 text-green-600" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-ancestor-dark">Record Cultural Memories</h3>
+              <p className="text-sm text-gray-600 mt-1">Preserve photos, audio, and stories that define your family’s heritage.</p>
+              <Link to="/upload-memory" className="inline-flex items-center mt-4 px-4 py-2 rounded-md border border-ancestor-accent text-ancestor-accent hover:bg-ancestor-accent hover:text-ancestor-dark transition-colors">
+                Upload Memory
+              </Link>
             </div>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Activities */}
-        <div className="lg:col-span-2">
-          <Card>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-ancestor-dark">Recent Activities</h2>
-              <Link to="#" className="text-ancestor-primary hover:text-ancestor-dark">
-                View All
+      {/* Privacy + Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="border border-gray-200">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-gray-100 text-ancestor-dark flex items-center justify-center">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-ancestor-dark">Review Privacy Settings</h3>
+              <p className="text-sm text-gray-600 mt-1">Control who sees your family data and cultural memories.</p>
+              <Link to="/privacy-settings" className="inline-flex items-center mt-4 px-4 py-2 rounded-md border border-gray-300 text-ancestor-dark hover:bg-gray-50 transition-colors">
+                Manage Privacy
               </Link>
             </div>
-            
-            <div className="space-y-4">
-              {recentActivities.map((activity) => {
-                const Icon = activity.icon
-                return (
-                  <div key={activity.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                      <Icon className="w-5 h-5 text-ancestor-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">{activity.title}</p>
-                      <p className="text-sm text-gray-500">{activity.time}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </Card>
-        </div>
+          </div>
+        </Card>
 
-        {/* Quick Actions */}
-        <div className="space-y-6">
-          <Card>
-            <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Quick Actions</h2>
-            
-            <div className="space-y-4">
-              <Link to="/family-tree/builder">
-                <Button variant="outline" className="w-full justify-start">
-                  <TreePine className="w-5 h-5 mr-3" />
-                  Add Family Member
-                </Button>
-              </Link>
-              
-              <Link to="/burial-sites">
-                <Button variant="outline" className="w-full justify-start">
-                  <MapPin className="w-5 h-5 mr-3" />
-                  Map Burial Site
-                </Button>
-              </Link>
-              
-              <Link to="/upload-memory">
-                <Button variant="outline" className="w-full justify-start">
-                  <Mic className="w-5 h-5 mr-3" />
-                  Record Memory
-                </Button>
-              </Link>
-              
-              <Link to="/cultural-memories">
-                <Button variant="outline" className="w-full justify-start">
-                  <BookOpen className="w-5 h-5 mr-3" />
-                  View Memories
-                </Button>
-              </Link>
-            </div>
-          </Card>
-
-          {/* Sharing Options */}
-          <Card>
-            <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Share Heritage</h2>
-            
-            <div className="space-y-4">
-              <Button className="w-full justify-start">
-                <Share2 className="w-5 h-5 mr-3" />
-                Invite Family Members
-              </Button>
-              
-              <Button variant="secondary" className="w-full justify-start">
-                <Calendar className="w-5 h-5 mr-3" />
-                Schedule Gathering
-              </Button>
-            </div>
-          </Card>
-        </div>
+        <Card className="lg:col-span-2 border border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-ancestor-dark">Recent Activity</h3>
+          </div>
+          <div className="space-y-4">
+            {activities.map(({ id, icon: Icon, text, time }) => (
+              <div key={id} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-gray-100 text-ancestor-primary flex items-center justify-center">
+                  <Icon className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-800">{text}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
     </div>
   )
