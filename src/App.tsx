@@ -1,6 +1,10 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
 import Layout from './components/Layout/Layout'
 import DashboardPage from './pages/DashboardPage'
+import FamilyTreePage from './pages/family/FamilyTreePage'
+import FamilyTreeBuilderPage from './pages/family/FamilyTreeBuilderPage'
+import FamilyMemberDetailsPage from './pages/family/FamilyMemberDetailsPage'
+import BurialSitesPage from './pages/BurialSitesPage'
 
 function Home() {
   return (
@@ -66,6 +70,10 @@ export default function App() {
       {/* Layout parent with Outlet */}
       <Route element={<Layout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/family-tree" element={<FamilyTreePage />} />
+        <Route path="/family-tree/builder" element={<FamilyTreeBuilderPage />} />
+        <Route path="/family-tree/member/:id" element={<FamilyMemberDetailsPage />} />
+        <Route path="/burial-sites" element={<BurialSitesPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

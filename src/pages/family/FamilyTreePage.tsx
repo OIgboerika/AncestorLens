@@ -9,17 +9,15 @@ import {
   Edit, 
   UserPlus,
   Calendar,
-  MapPin,
-  Mic
+  MapPin
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 
-const FamilyTreePage = () => {
+export default function FamilyTreePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Mock family tree data
   const familyData = {
     currentGeneration: [
       {
@@ -229,9 +227,9 @@ const FamilyTreePage = () => {
         )}
       </Card>
 
-      {/* Family Tree Visualization */}
-      <div className="space-y-8">
-        {/* Grandparents Generation */}
+      {/* Generations */}
+      <section className="space-y-8">
+        {/* Grandparents */}
         <div>
           <h2 className="text-xl font-semibold text-ancestor-dark mb-4">Grandparents (Generation 3)</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -261,13 +259,9 @@ const FamilyTreePage = () => {
                   </div>
                   <div className="flex space-x-2">
                     <Link to={`/family-tree/member/${member.id}`}>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                     </Link>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button>
                   </div>
                 </div>
               </Card>
@@ -275,7 +269,7 @@ const FamilyTreePage = () => {
           </div>
         </div>
 
-        {/* Parents Generation */}
+        {/* Parents */}
         <div>
           <h2 className="text-xl font-semibold text-ancestor-dark mb-4">Parents (Generation 2)</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -290,9 +284,7 @@ const FamilyTreePage = () => {
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{member.name}</h3>
                     <p className="text-sm text-gray-600">{member.relationship}</p>
-                    <p className="text-sm text-gray-500">
-                      {member.birthYear} {member.deathYear ? `- ${member.deathYear}` : ''}
-                    </p>
+                    <p className="text-sm text-gray-500">{member.birthYear}{member.deathYear ? ` - ${member.deathYear}` : ''}</p>
                     <div className="flex items-center space-x-2 mt-2">
                       <span className={`px-2 py-1 text-xs rounded-full ${member.role === 'Living' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                         {member.role}
@@ -307,13 +299,9 @@ const FamilyTreePage = () => {
                   </div>
                   <div className="flex space-x-2">
                     <Link to={`/family-tree/member/${member.id}`}>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                     </Link>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button>
                   </div>
                 </div>
               </Card>
@@ -338,26 +326,19 @@ const FamilyTreePage = () => {
                     <p className="text-sm text-gray-600">{member.relationship}</p>
                     <p className="text-sm text-gray-500">Born {member.birthYear}</p>
                     <div className="flex items-center space-x-2 mt-2">
-                      <span className="px-2 py-1 text-xs rounded-full bg-ancestor-primary text-white">
-                        {member.role}
-                      </span>
+                      <span className="px-2 py-1 text-xs rounded-full bg-ancestor-primary text-white">{member.role}</span>
                       {member.location && (
                         <span className="text-xs text-gray-500 flex items-center">
-                          <MapPin className="w-3 h-3 mr-1" />
-                          {member.location}
+                          <MapPin className="w-3 h-3 mr-1" />{member.location}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="flex space-x-2">
                     <Link to={`/family-tree/member/${member.id}`}>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                     </Link>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="w-4 h-4" />
-                    </Button>
+                    <Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button>
                   </div>
                 </div>
               </Card>
@@ -365,7 +346,7 @@ const FamilyTreePage = () => {
           </div>
         </div>
 
-        {/* Children Generation */}
+        {/* Children */}
         {familyData.children.length > 0 && (
           <div>
             <h2 className="text-xl font-semibold text-ancestor-dark mb-4">Children (Generation 0)</h2>
@@ -383,26 +364,19 @@ const FamilyTreePage = () => {
                       <p className="text-sm text-gray-600">{member.relationship}</p>
                       <p className="text-sm text-gray-500">Born {member.birthYear}</p>
                       <div className="flex items-center space-x-2 mt-2">
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                          {member.role}
-                        </span>
+                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">{member.role}</span>
                         {member.location && (
                           <span className="text-xs text-gray-500 flex items-center">
-                            <MapPin className="w-3 h-3 mr-1" />
-                            {member.location}
+                            <MapPin className="w-3 h-3 mr-1" />{member.location}
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex space-x-2">
                       <Link to={`/family-tree/member/${member.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
-                        </Button>
+                        <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
                       </Link>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
+                      <Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 </Card>
@@ -410,9 +384,7 @@ const FamilyTreePage = () => {
             </div>
           </div>
         )}
-      </div>
+      </section>
     </div>
   )
 }
-
-export default FamilyTreePage
