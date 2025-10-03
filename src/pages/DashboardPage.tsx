@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { 
   Users, 
   MapPin, 
-  Microphone, 
+  Mic, 
   Plus, 
   Calendar, 
   Upload,
@@ -45,7 +45,7 @@ const DashboardPage = () => {
       type: 'memory',
       title: 'Uploaded oral story: The Journey West',
       time: '3 days ago',
-      icon: Microphone
+      icon: Mic
     }
   ]
 
@@ -90,7 +90,7 @@ const DashboardPage = () => {
               <p className="text-2xl font-bold text-ancestor-accent">{stats.oralMemories}</p>
             </div>
             <div className="w-12 h-12 bg-ancestor-accent bg-opacity-10 rounded-full flex items-center justify-center">
-              <Microphone className="w-6 h-6 text-ancestor-accent" />
+              <Mic className="w-6 h-6 text-ancestor-accent" />
             </div>
           </div>
         </Card>
@@ -160,7 +160,7 @@ const DashboardPage = () => {
               
               <Link to="/upload-memory">
                 <Button variant="outline" className="w-full justify-start">
-                  <Microphone className="w-5 h-5 mr-3" />
+                  <Mic className="w-5 h-5 mr-3" />
                   Record Memory
                 </Button>
               </Link>
