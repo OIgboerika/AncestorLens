@@ -5,6 +5,11 @@ import FamilyTreePage from './pages/family/FamilyTreePage'
 import FamilyTreeBuilderPage from './pages/family/FamilyTreeBuilderPage'
 import FamilyMemberDetailsPage from './pages/family/FamilyMemberDetailsPage'
 import BurialSitesPage from './pages/BurialSitesPage'
+import CulturalMemoriesPage from './pages/cultural/CulturalMemoriesPage'
+import CulturalMemoryDetailsPage from './pages/cultural/CulturalMemoryDetailsPage'
+import UploadMemoryPage from './pages/cultural/UploadMemoryPage'
+import ProfilePage from './pages/ProfilePage'
+import PrivacySettingsPage from './pages/PrivacySettingsPage'
 
 function Home() {
   return (
@@ -74,6 +79,11 @@ export default function App() {
         <Route path="/family-tree/builder" element={<FamilyTreeBuilderPage />} />
         <Route path="/family-tree/member/:id" element={<FamilyMemberDetailsPage />} />
         <Route path="/burial-sites" element={<BurialSitesPage />} />
+        <Route path="/cultural-memories" element={<CulturalMemoriesPage />} />
+        <Route path="/cultural-memories/:id" element={<CulturalMemoryDetailsPage />} />
+        <Route path="/upload-memory" element={<UploadMemoryPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/privacy-settings" element={<PrivacySettingsPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

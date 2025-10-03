@@ -7,17 +7,14 @@ import {
   Mail,
   Phone,
   MapPin,
-  Calendar,
-  Heart,
-  Share2,
   Shield,
-  Settings
+  Settings,
+  Share2
 } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
-import Input from '../components/ui/Input/Input'
 
-const ProfilePage = () => {
+export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [userData, setUserData] = useState({
     name: 'John Doe',
@@ -26,270 +23,119 @@ const ProfilePage = () => {
     location: 'Lagos, Nigeria',
     bio: 'Family historian and heritage preservation enthusiast. Passionate about keeping African traditions alive for future generations.',
     joinDate: 'January 2023',
-    profileImage: null,
-    familyStats: {
-      familyMembers: 24,
-      memoriesUploaded: 8,
-      burialSites: 3,
-      profileViews: 156
-    }
+    profileImage: '',
+    familyStats: { familyMembers: 24, memoriesUploaded: 8, burialSites: 3, profileViews: 156 }
   })
 
-  const handleEdit = () => {
-    setIsEditing(true)
-  }
-
-  const handleSave = () => {
-    setIsEditing(false)
-    // Here you would save the updated profile data
-    console.log('Updated profile:', userData)
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setUserData({
-      ...userData,
-      [name]: value
-    })
-  }
+  const handleSave = () => setIsEditing(false)
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-ancestor-dark mb-2">My Profile</h1>
-          <p className="text-gray-600">Manage your account settings and personal information</p>
+      <Card className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-ancestor-primary to-ancestor-secondary text-white flex items-center justify-center text-2xl font-bold">
+                {userData.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              {isEditing && (
+                <button className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center shadow"><Camera className="w-4 h-4 text-ancestor-primary" /></button>
+              )}
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-ancestor-dark">{userData.name}</h1>
+              <p className="text-sm text-gray-600">Member since {userData.joinDate}</p>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                <span className="px-2 py-1 rounded-full bg-ancestor-light text-ancestor-primary">Family Members: {userData.familyStats.familyMembers}</span>
+                <span className="px-2 py-1 rounded-full bg-ancestor-light text-ancestor-primary">Memories: {userData.familyStats.memoriesUploaded}</span>
+                <span className="px-2 py-1 rounded-full bg-ancestor-light text-ancestor-primary">Burial Sites: {userData.familyStats.burialSites}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {!isEditing ? (
+              <Button variant="outline" className="flex items-center gap-2" onClick={() => setIsEditing(true)}><Edit className="w-4 h-4" /> Edit Profile</Button>
+            ) : (
+              <Button className="flex items-center gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
+            )}
+            <Button variant="outline" className="flex items-center gap-2"><Share2 className="w-4 h-4" /> Share</Button>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          {isEditing && (
-            <Button variant="outline" className="flex items-center space-x-2">
-              <Save className="w-4 h-4" />
-              <span>Save Changes</span>
-            </Button>
-          )}
-          {!isEditing && (
-            <Button variant="outline" className="flex items-center space-x-2" onClick={handleEdit}>
-              <Edit className="w-4 h-4" />
-              <span>Edit Profile</span>
-            </Button>
-          )}
-        </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Profile Overview */}
-        <div className="lg:col-span-1">
+        {/* Main */}
+        <div className="lg:col-span-2 space-y-8">
           <Card>
-            <div className="text-center">
-              <div className="relative inline-block mb-4">
-                <div className="w-32 h-32 bg-gradient-to-br from-ancestor-primary to-ancestor-secondary rounded-full mx-auto flex items-center justify-center overflow-hidden">
-                  {userData.profileImage ? (
-                    <img 
-                      src={userData.profileImage} 
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-white font-bold text-4xl">
-                      {userData.name.split(' ').map(n => n[0]).join('')}
-                    </span>
-                  )}
-                </div>
-                
-                {isEditing && (
-                  <button className="absolute bottom-0 right-0 w-10 h-10 bg-ancestor-primary rounded-full flex items-center justify-center text-white border-2 border-white">
-                    <Camera className="w-5 h-5" />
-                  </button>
+            <h2 className="text-lg font-semibold text-ancestor-dark mb-4">Personal Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Full Name</label>
+                {!isEditing ? (
+                  <div className="flex items-center text-gray-900"><User className="w-4 h-4 mr-2 text-gray-400" />{userData.name}</div>
+                ) : (
+                  <input className="input-field" defaultValue={userData.name} />
                 )}
               </div>
-              
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">{userData.name}</h2>
-              <div className="flex items-center justify-center mb-4">
-                <span className="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800">
-                  Active Member
-                </span>
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Location</label>
+                {!isEditing ? (
+                  <div className="flex items-center text-gray-900"><MapPin className="w-4 h-4 mr-2 text-gray-400" />{userData.location}</div>
+                ) : (
+                  <input className="input-field" defaultValue={userData.location} />
+                )}
               </div>
-              
-              <div className="text-sm text-gray-500">
-                Member since {userData.joinDate}
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Email</label>
+                {!isEditing ? (
+                  <div className="flex items-center text-ancestor-primary"><Mail className="w-4 h-4 mr-2 text-gray-400" />{userData.email}</div>
+                ) : (
+                  <input className="input-field" defaultValue={userData.email} />
+                )}
               </div>
-            </div>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Heritage Contributions</h3>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Family Members</span>
-                <span className="font-semibold text-gray-900">{userData.familyStats.familyMembers}</span>
+              <div>
+                <label className="block text-sm text-gray-700 mb-2">Phone</label>
+                {!isEditing ? (
+                  <div className="flex items-center text-ancestor-primary"><Phone className="w-4 h-4 mr-2 text-gray-400" />{userData.phone}</div>
+                ) : (
+                  <input className="input-field" defaultValue={userData.phone} />
+                )}
               </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Memories Uploaded</span>
-                <span className="font-semibold text-gray-900">{userData.familyStats.memoriesUploaded}</span>
+              <div className="md:col-span-2">
+                <label className="block text-sm text-gray-700 mb-2">About Me</label>
+                {!isEditing ? (
+                  <p className="text-gray-700 leading-relaxed">{userData.bio}</p>
+                ) : (
+                  <textarea className="input-field resize-none" rows={4} defaultValue={userData.bio} />
+                )}
               </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Burial Sites</span>
-                <span className="font-semibold text-gray-900">{userData.familyStats.burialSites}</span>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Profile Views</span>
-                  <span className="font-semibold text-gray-900">{userData.familyStats.profileViews}</span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="mt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <Share2 className="w-4 h-4 mr-3" />
-                Share Profile
-              </Button>
-              
-              <Button variant="outline" className="w-full justify-start">
-                <Shield className="w-4 h-4 mr-3" />
-                Privacy Settings
-              </Button>
-              
-              <Button variant="outline" className="w-full justify-start">
-                <Settings className="w-4 h-4 mr-3" />
-                Account Settings
-              </Button>
             </div>
           </Card>
         </div>
 
-        {/* Main Profile Details */}
-        <div className="lg:col-span-2">
-          {/* Personal Information */}
-          <Card className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="name"
-                    value={userData.name}
-                    onChange={handleInputChange}
-                    className="input-field"
-                  />
-                ) : (
-                  <div className="flex items-center text-gray-900">
-                    <User className="w-4 h-4 mr-2 text-gray-400" />
-                    {userData.name}
-                  </div>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="location"
-                    value={userData.location}
-                    onChange={handleInputChange}
-                    className="input-field"
-                  />
-                ) : (
-                  <div className="flex items-center text-gray-900">
-                    <MapPin className="w-4 h-4 mr-2 text-gray-400" />
-                    {userData.location}
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* Contact Information */}
-          <Card className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-            
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <Mail className="w-5 h-5 text-gray-400 mr-3" />
-                <div className="flex-1">
-                  {isEditing ? (
-                    <input
-                      type="email"
-                      name="email"
-                      value={userData.email}
-                      onChange={handleInputChange}
-                      className="input-field"
-                    />
-                  ) : (
-                    <a href={`mailto:${userData.email}`} className="text-ancestor-primary hover:text-ancestor-dark">
-                      {userData.email}
-                    </a>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex items-center">
-                <Phone className="w-5 h-5 text-gray-400 mr-3" />
-                <div className="flex-1">
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={userData.phone}
-                      onChange={handleInputChange}
-                      className="input-field"
-                    />
-                  ) : (
-                    <a href={`tel:${userData.phone}`} className="text-ancestor-primary hover:text-ancestor-dark">
-                      {userData.phone}
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Biography */}
+        {/* Sidebar */}
+        <div className="space-y-6">
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">About Me</h3>
-            
-            {isEditing ? (
-              <textarea
-                name="bio"
-                value={userData.bio}
-                onChange={handleInputChange}
-                rows={4}
-                className="input-field resize-none"
-                placeholder="Tell us about yourself..."
-              />
-            ) : (
-              <p className="text-gray-700 leading-relaxed">{userData.bio}</p>
-            )}
-          </Card>
-          
-          {/* Save Button */}
-          {isEditing && (
-            <div className="flex justify-end mt-6">
-              <Button onClick={handleSave} className="flex items-center space-x-2">
-                <Save className="w-4 h-4" />
-                <span>Save Changes</span>
-              </Button>
+            <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Quick Actions</h3>
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full justify-start"><Shield className="w-4 h-4 mr-3" /> Privacy Settings</Button>
+              <Button variant="outline" className="w-full justify-start"><Settings className="w-4 h-4 mr-3" /> Account Settings</Button>
+              <Button variant="outline" className="w-full justify-start"><Share2 className="w-4 h-4 mr-3" /> Share Profile</Button>
             </div>
-          )}
+          </Card>
+
+          <Card>
+            <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Heritage Contributions</h3>
+            <div className="space-y-2 text-sm text-gray-700">
+              <div className="flex items-center justify-between"><span>Family Members</span><span className="font-semibold">{userData.familyStats.familyMembers}</span></div>
+              <div className="flex items-center justify-between"><span>Memories Uploaded</span><span className="font-semibold">{userData.familyStats.memoriesUploaded}</span></div>
+              <div className="flex items-center justify-between"><span>Burial Sites</span><span className="font-semibold">{userData.familyStats.burialSites}</span></div>
+              <div className="border-t border-gray-200 pt-2 flex items-center justify-between"><span>Profile Views</span><span className="font-semibold">{userData.familyStats.profileViews}</span></div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>
   )
 }
-
-export default ProfilePage
