@@ -90,7 +90,7 @@ Originally targeting Nigeria due to its strong oral history traditions, Ancestor
 
 ## 🎨 Design Mockups
 
-UI designs were created using Visily. Below are the key screenshots of the application interfaces:
+UI designs were created using [Visily](https://app.visily.ai/projects/aec4800f-3c1d-406e-bd6a-4389cb3bcdca/boards/2162941). Below are the key screenshots of the application interfaces:
 
 ### Authentication & User Management
 
