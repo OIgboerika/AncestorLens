@@ -2,6 +2,10 @@
 
 **A culturally relevant genealogy platform designed to help African families preserve their heritage through oral traditions, burial site mapping, and family tree documentation.**
 
+## 🎬 DEMO VIDEO
+
+**WATCH THE FRONTEND DEMO:** [Demo Video](https://drive.google.com/file/d/1wljp41jv1SPgqJ_uNIqNwbXvaryf2Axu/view?usp=sharing)
+
 ## Description
 
 AncestorLens is a full-stack web application that addresses the unique needs of African genealogy by focusing on features that existing Western genealogy tools often overlook. The platform empowers families to preserve their cultural heritage through:
