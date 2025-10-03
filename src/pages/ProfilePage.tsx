@@ -56,11 +56,12 @@ const ProfilePage = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-ancestor-dark mb-2">My Profile</h1>
           <p className="text-gray-600">Manage your account settings and personal information</p>
         </div>
+        <div className="flex space-x-3">
           {isEditing && (
             <Button variant="outline" className="flex items-center space-x-2">
               <Save className="w-4 h-4" />
@@ -203,6 +204,11 @@ const ProfilePage = () => {
                     onChange={handleInputChange}
                     className="input-field"
                   />
+                ) : (
+                  <div className="flex items-center text-gray-900">
+                    <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                    {userData.location}
+                  </div>
                 )}
               </div>
             </div>

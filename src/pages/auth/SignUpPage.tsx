@@ -152,6 +152,8 @@ const SignUpPage = () => {
                 )}
               </button>
             </div>
+          </div>
+          
           <div className="flex items-center">
             <input
               type="checkbox"

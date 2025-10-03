@@ -112,7 +112,7 @@ const Navbar = () => {
               <Link
                     to="/profile"
                     className="flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-ancestor-primary hover:bg-gray-50"
-                    onClick={() => setIsLinkOpen(false)}
+                    onClick={() => setIsOpen(false)}
                   >
                     <User className="w-4 h-4" />
                     <span>Profile</span>
