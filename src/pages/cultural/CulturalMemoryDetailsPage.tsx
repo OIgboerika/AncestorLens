@@ -1,26 +1,47 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Play, Pause, Share2, Download, Calendar, Clock, User, MapPin, Volume2 } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Play, Pause, Share2, Download, Calendar, Clock, User, MapPin, Volume2, Image as ImageIcon } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+
+type MediaType = 'audio' | 'image'
+
+interface MemoryItem {
+  id: number | string
+  title: string
+  description: string
+  uploadedBy: string
+  uploadDate: string
+  location: string
+  category: string
+  type: MediaType
+  duration?: string
+  imageUrl?: string
+  images?: string[]
+  participants?: string[]
+  tags?: string[]
+}
 
 export default function CulturalMemoryDetailsPage() {
-  const { id } = useParams()
   const navigate = useNavigate()
+  const { state } = useLocation() as { state?: { memory?: MemoryItem } }
   const [playing, setPlaying] = useState(false)
+  const memory = state?.memory as MemoryItem | undefined
 
-  const memory = {
-    id,
-    title: 'The Naming Ceremony',
-    description: 'Grandmother recounts a traditional naming rite in Enugu. This oral history captures family values and communal identity.',
-    uploader: 'Ada Obi',
-    uploadDate: 'Jan 12, 2024',
-    duration: '12:45',
-    category: 'Ceremony',
-    location: 'Enugu, Nigeria',
-    year: '1991',
-    participants: ['Grandmother', 'Aunt Ngozi'],
-    tags: ['Naming', 'Tradition', 'Ceremony'],
+  // Gallery state for images
+  const images = useMemo(() => memory?.images || (memory?.imageUrl ? [memory.imageUrl] : []), [memory])
+  const [currentIdx, setCurrentIdx] = useState(0)
+
+  if (!memory) {
+    // Fallback minimal UI if navigated directly without state
+    return (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <button onClick={() => navigate(-1)} className="text-ancestor-primary hover:text-ancestor-dark inline-flex items-center gap-2 mb-6"><ArrowLeft className="w-4 h-4" /> Back</button>
+        <Card>
+          <div className="p-6 text-gray-700">This memory could not be loaded. Please return to the list and try again.</div>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -30,13 +51,34 @@ export default function CulturalMemoryDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <Card>
-            <div className="rounded-xl bg-gradient-to-br from-ancestor-primary/15 to-ancestor-secondary/15 aspect-video flex items-center justify-center">
-              <button onClick={() => setPlaying(p => !p)} className="w-20 h-20 rounded-full bg-white shadow flex items-center justify-center hover:scale-105 transition">
-                {playing ? <Pause className="w-8 h-8 text-ancestor-primary" /> : <Play className="w-8 h-8 text-ancestor-primary ml-1" />}
-              </button>
-            </div>
+            {memory.type === 'audio' ? (
+              <div className="rounded-xl bg-gradient-to-br from-ancestor-primary/15 to-ancestor-secondary/15 aspect-video flex items-center justify-center">
+                <button onClick={() => setPlaying(p => !p)} className="w-20 h-20 rounded-full bg-white shadow flex items-center justify-center hover:scale-105 transition">
+                  {playing ? <Pause className="w-8 h-8 text-ancestor-primary" /> : <Play className="w-8 h-8 text-ancestor-primary ml-1" />}
+                </button>
+              </div>
+            ) : (
+              <div className="p-4">
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-gray-100">
+                  {images[currentIdx] ? (
+                    <img src={images[currentIdx]} alt={memory.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400"><ImageIcon className="w-10 h-10" /></div>
+                  )}
+                </div>
+                {images.length > 1 && (
+                  <div className="mt-3 grid grid-cols-5 gap-2">
+                    {images.map((src, i) => (
+                      <button key={i} className={`h-16 rounded overflow-hidden border ${i===currentIdx ? 'border-ancestor-primary' : 'border-gray-200'}`} onClick={() => setCurrentIdx(i)}>
+                        <img src={src} alt={`thumb-${i}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-            <div className="mt-6">
+            <div className="mt-6 px-6 pb-6">
               <h1 className="text-2xl font-bold text-ancestor-dark">{memory.title}</h1>
               <p className="text-gray-600 mt-2">{memory.description}</p>
 
@@ -52,19 +94,25 @@ export default function CulturalMemoryDetailsPage() {
           <Card>
             <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Information</h3>
             <div className="space-y-2 text-sm text-gray-700">
-              <div className="flex items-center"><User className="w-4 h-4 mr-2 text-gray-400" /> Uploaded by {memory.uploader}</div>
+              <div className="flex items-center"><User className="w-4 h-4 mr-2 text-gray-400" /> Uploaded by {memory.uploadedBy}</div>
               <div className="flex items-center"><Calendar className="w-4 h-4 mr-2 text-gray-400" /> {memory.uploadDate}</div>
-              <div className="flex items-center"><Clock className="w-4 h-4 mr-2 text-gray-400" /> {memory.duration}</div>
+              {memory.type === 'audio' && memory.duration && (
+                <div className="flex items-center"><Clock className="w-4 h-4 mr-2 text-gray-400" /> {memory.duration}</div>
+              )}
               <div className="flex items-center"><MapPin className="w-4 h-4 mr-2 text-gray-400" /> {memory.location}</div>
             </div>
-            <div className="mt-4">
-              <p className="text-sm text-gray-600"><span className="font-medium text-ancestor-dark">Participants:</span> {memory.participants.join(', ')}</p>
+            {memory.participants && memory.participants.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm text-gray-600"><span className="font-medium text-ancestor-dark">Participants:</span> {memory.participants.join(', ')}</p>
+              </div>
+            )}
+            {memory.tags && memory.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {memory.tags.map(t => (
                   <span key={t} className="px-2 py-0.5 rounded-full bg-ancestor-light text-ancestor-primary text-xs">{t}</span>
                 ))}
               </div>
-            </div>
+            )}
           </Card>
 
           <Card>
