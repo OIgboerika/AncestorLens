@@ -1,15 +1,15 @@
 import { Outlet } from 'react-router-dom'
-import Navbar from '../ui/Navbar/Navbar'
-import Footer from '../ui/Footer/Footer'
+import Sidebar from '../ui/Sidebar/Sidebar'
 
 const Layout = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      <main className="flex-1 pt-16">
-        <Outlet />
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      <main className="md:pl-64 pt-4 md:pt-6">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <Outlet />
+        </div>
       </main>
-      <Footer />
     </div>
   )
 }

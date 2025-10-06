@@ -8,7 +8,8 @@ import {
   Users,
   Calendar,
   MapPin,
-  Upload
+  Upload,
+  X
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
@@ -32,7 +33,7 @@ const FamilyTreeBuilderPage = () => {
     bio: '',
     relationship: '',
     parentId: '',
-    profileImage: null
+    profileImage: null as File | null,
   })
 
   const [relationships] = useState([
@@ -40,6 +41,23 @@ const FamilyTreeBuilderPage = () => {
     'Uncle', 'Aunt', 'Cousin', 'Son', 'Daughter', 'Grandson', 'Granddaughter',
     'Nephew', 'Niece', 'Husband', 'Partner', 'Other'
   ])
+
+  // Heritage tags state
+  const [tags, setTags] = useState<string[]>([])
+  const [newTag, setNewTag] = useState('')
+  const suggested = [
+    'Maasai','Yoruba','Asante','Zulu','Igbo','Hausa','Amhara','Xhosa','Elder','Storyteller','Lineage Keeper','Community Leader','Artisan','Warrior','Healer','Spiritual Guide','Historian','Poet','Musician','Educator','Innovator','Youth Ambassador'
+  ]
+
+  const addTag = (value: string) => {
+    const v = value.trim()
+    if (!v) return
+    if (tags.includes(v)) return
+    setTags([...tags, v])
+    setNewTag('')
+  }
+  const removeTag = (value: string) => setTags(tags.filter(t => t !== value))
+  const toggleSuggested = (value: string) => tags.includes(value) ? removeTag(value) : addTag(value)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -61,8 +79,8 @@ const FamilyTreeBuilderPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Form data:', formData)
-    // Here you would save the family member data
+    const payload = { ...formData, heritageTags: tags }
+    console.log('Form data:', payload)
     navigate('/family-tree')
   }
 
@@ -172,6 +190,52 @@ const FamilyTreeBuilderPage = () => {
               onChange={handleInputChange}
               placeholder="Enter occupation"
             />
+          </div>
+        </Card>
+
+        {/* African Heritage Tags */}
+        <Card>
+          <h2 className="text-xl font-semibold text-ancestor-dark mb-2">African Heritage Tags</h2>
+          <p className="text-sm text-gray-600 mb-4">Select relevant cultural tags or add your own.</p>
+
+          {/* Selected tags */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {tags.map(t => (
+                <span key={t} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-ancestor-light text-ancestor-primary text-sm">
+                  {t}
+                  <button type="button" onClick={() => removeTag(t)} className="text-ancestor-primary/80 hover:text-ancestor-primary">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Add tag input */}
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(newTag) } }}
+              placeholder="Add a tag"
+              className="input-field max-w-xs"
+            />
+            <Button type="button" variant="outline" onClick={() => addTag(newTag)}>Add Tag</Button>
+          </div>
+
+          {/* Suggested */}
+          <div className="flex flex-wrap gap-2">
+            {suggested.map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => toggleSuggested(s)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition ${tags.includes(s) ? 'bg-ancestor-light text-ancestor-primary border-ancestor-primary' : 'text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+              >
+                {s}
+              </button>
+            ))}
           </div>
         </Card>
 
