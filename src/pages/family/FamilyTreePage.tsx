@@ -48,20 +48,64 @@ export default function FamilyTreePage() {
   })
   const navigate = useNavigate()
 
-  // Load family members from localStorage on component mount
+  // Load family members from localStorage on component mount and when component becomes visible
   useEffect(() => {
-    const savedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
-    if (savedMembers.length > 0) {
-      // Merge saved members with existing data
+    const loadFamilyMembers = () => {
+      const savedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
       
-      // Update familyData with merged members
-      setFamilyData(prev => ({
-        ...prev,
-        currentGeneration: [...prev.currentGeneration, ...savedMembers.filter((m: FamilyMember) => m.relationship === 'Self')],
-        parents: [...prev.parents, ...savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship))],
-        grandparents: [...prev.grandparents, ...savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother'].includes(m.relationship))],
-        children: [...prev.children, ...savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter'].includes(m.relationship))],
-      }))
+      // Get existing mock members
+      const mockMembers = {
+        currentGeneration: [
+          { id: 1, name: 'John Doe', role: 'Living' as const, birthYear: '1980', location: 'Lagos, Nigeria', relationship: 'Self', hasChildren: true, hasParents: true, image: '' },
+        ],
+        parents: [
+          { id: 2, name: 'Michael Doe', role: 'Deceased' as const, birthYear: '1955', deathYear: '2020', location: 'Enugu, Nigeria', relationship: 'Father', hasChildren: true, hasParents: false, image: '' },
+          { id: 3, name: 'Grace Doe', role: 'Living' as const, birthYear: '1960', location: 'Enugu, Nigeria', relationship: 'Mother', hasChildren: true, hasParents: false, image: '' },
+        ],
+        grandparents: [
+          { id: 4, name: 'Samuel Doe', role: 'Deceased' as const, birthYear: '1925', deathYear: '1995', location: 'Abuja, Nigeria', relationship: 'Paternal Grandfather', hasChildren: true, hasParents: false, image: '' },
+          { id: 5, name: 'Mary Doe', role: 'Deceased' as const, birthYear: '1930', deathYear: '2000', location: 'Abuja, Nigeria', relationship: 'Paternal Grandmother', hasChildren: true, hasParents: false, image: '' },
+        ],
+        children: [
+          { id: 6, name: 'David Doe', role: 'Living' as const, birthYear: '2005', location: 'Lagos, Nigeria', relationship: 'Son', hasChildren: false, hasParents: true, image: '' },
+          { id: 7, name: 'Sarah Doe', role: 'Living' as const, birthYear: '2008', location: 'Lagos, Nigeria', relationship: 'Daughter', hasChildren: false, hasParents: true, image: '' },
+        ],
+      }
+      
+      // Merge saved members with mock members, avoiding duplicates
+      const mergedData = {
+        currentGeneration: [...mockMembers.currentGeneration, ...savedMembers.filter((m: FamilyMember) => m.relationship === 'Self' && !mockMembers.currentGeneration.some(existing => existing.id === m.id))],
+        parents: [...mockMembers.parents, ...savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship) && !mockMembers.parents.some(existing => existing.id === m.id))],
+        grandparents: [...mockMembers.grandparents, ...savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother'].includes(m.relationship) && !mockMembers.grandparents.some(existing => existing.id === m.id))],
+        children: [...mockMembers.children, ...savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter'].includes(m.relationship) && !mockMembers.children.some(existing => existing.id === m.id))],
+      }
+      
+      setFamilyData(mergedData)
+    }
+    
+    loadFamilyMembers()
+    
+    // Listen for storage changes (when new members are added)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'familyMembers') {
+        loadFamilyMembers()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Also refresh when the page becomes visible (user navigates back)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadFamilyMembers()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
