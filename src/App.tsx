@@ -10,6 +10,8 @@ import CulturalMemoryDetailsPage from './pages/cultural/CulturalMemoryDetailsPag
 import UploadMemoryPage from './pages/cultural/UploadMemoryPage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacySettingsPage from './pages/PrivacySettingsPage'
+import LoginPage from './pages/auth/LoginPage'
+import SignUpPage from './pages/auth/SignUpPage'
 
 function Home() {
   return (
@@ -30,47 +32,12 @@ function Home() {
   )
 }
 
-function Login() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-ancestor-dark mb-2">Welcome Back</h2>
-        <p className="text-gray-600 mb-6">Sign in to continue</p>
-        <input type="email" placeholder="Email" className="input-field mb-3" />
-        <input type="password" placeholder="Password" className="input-field mb-4" />
-        <button className="btn-primary w-full">Sign In</button>
-        <p className="text-sm text-gray-600 mt-4 text-center">
-          No account? <Link to="/signup" className="text-ancestor-primary hover:text-ancestor-dark">Sign up</Link>
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function SignUp() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-ancestor-dark mb-2">Create Account</h2>
-        <p className="text-gray-600 mb-6">Start preserving your heritage</p>
-        <input type="text" placeholder="Full name" className="input-field mb-3" />
-        <input type="email" placeholder="Email" className="input-field mb-3" />
-        <input type="password" placeholder="Password" className="input-field mb-4" />
-        <button className="btn-primary w-full">Create Account</button>
-        <p className="text-sm text-gray-600 mt-4 text-center">
-          Have an account? <Link to="/login" className="text-ancestor-primary hover:text-ancestor-dark">Log in</Link>
-        </p>
-      </div>
-    </div>
-  )
-}
-
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SignUp />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
 
       {/* Layout parent with Outlet */}
       <Route element={<Layout />}>
