@@ -79,8 +79,32 @@ const FamilyTreeBuilderPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const payload = { ...formData, heritageTags: tags }
-    console.log('Form data:', payload)
+    
+    // Basic validation
+    if (!formData.firstName || !formData.lastName || !formData.relationship) {
+      alert('Please fill in all required fields (First Name, Last Name, and Relationship)')
+      return
+    }
+    
+    const payload = { 
+      ...formData, 
+      heritageTags: tags,
+      id: Date.now(), // Generate unique ID
+      name: `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`.trim(),
+      role: formData.deathDate ? 'Deceased' : 'Living',
+      birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
+      deathYear: formData.deathDate ? new Date(formData.deathDate).getFullYear().toString() : '',
+      location: formData.birthPlace || 'Unknown',
+      image: formData.profileImage ? URL.createObjectURL(formData.profileImage) : undefined
+    }
+    
+    // Store in localStorage for now (will be replaced with Firebase later)
+    const existingMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+    existingMembers.push(payload)
+    localStorage.setItem('familyMembers', JSON.stringify(existingMembers))
+    
+    console.log('Family member added:', payload)
+    alert('Family member added successfully!')
     navigate('/family-tree')
   }
 

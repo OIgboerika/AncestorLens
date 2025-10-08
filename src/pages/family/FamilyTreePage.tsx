@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { 
   Users, 
@@ -29,9 +29,7 @@ export default function FamilyTreePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [scale, setScale] = useState(1)
-  const navigate = useNavigate()
-
-  const familyData: { grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] } = {
+  const [familyData, setFamilyData] = useState<{ grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }>({
     currentGeneration: [
       { id: 1, name: 'John Doe', role: 'Living', birthYear: '1980', location: 'Lagos, Nigeria', relationship: 'Self', hasChildren: true, hasParents: true, image: '' },
     ],
@@ -47,14 +45,32 @@ export default function FamilyTreePage() {
       { id: 6, name: 'David Doe', role: 'Living', birthYear: '2005', location: 'Lagos, Nigeria', relationship: 'Son', hasChildren: false, hasParents: true, image: '' },
       { id: 7, name: 'Sarah Doe', role: 'Living', birthYear: '2008', location: 'Lagos, Nigeria', relationship: 'Daughter', hasChildren: false, hasParents: true, image: '' },
     ],
-  }
+  })
+  const navigate = useNavigate()
+
+  // Load family members from localStorage on component mount
+  useEffect(() => {
+    const savedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+    if (savedMembers.length > 0) {
+      // Merge saved members with existing data
+      
+      // Update familyData with merged members
+      setFamilyData(prev => ({
+        ...prev,
+        currentGeneration: [...prev.currentGeneration, ...savedMembers.filter((m: FamilyMember) => m.relationship === 'Self')],
+        parents: [...prev.parents, ...savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship))],
+        grandparents: [...prev.grandparents, ...savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother'].includes(m.relationship))],
+        children: [...prev.children, ...savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter'].includes(m.relationship))],
+      }))
+    }
+  }, [])
 
   const familyStats = useMemo(() => ({
     totalMembers: familyData.grandparents.length + familyData.parents.length + familyData.currentGeneration.length + familyData.children.length,
     livingMembers: [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children].filter(m => m.role === 'Living').length,
     deceasedMembers: [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children].filter(m => m.role === 'Deceased').length,
     generations: 4,
-  }), [])
+  }), [familyData])
 
   const Node = ({ member }: { member: FamilyMember }) => {
     const initials = member.name.split(' ').map(n => n[0]).join('')
