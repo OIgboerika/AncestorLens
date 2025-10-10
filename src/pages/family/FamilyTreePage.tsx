@@ -129,7 +129,7 @@ export default function FamilyTreePage() {
 
     return (
       <button
-        onClick={() => navigate(`/family-tree/member/${member.id}`)}
+        onClick={() => navigate(`/family-tree/member/${member.id}`, { state: { member } })}
         className="group relative flex flex-col items-center"
         title={`${member.name} • ${member.relationship}`}
       >
@@ -171,9 +171,9 @@ export default function FamilyTreePage() {
 
       {/* Search and Filters */}
       <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
             <input
               type="text"
               placeholder="Search family members..."
@@ -182,19 +182,47 @@ export default function FamilyTreePage() {
               className="input-field pl-10"
             />
           </div>
-          <div className="flex sm:hidden items-center gap-2">
-            <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s - 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomOut className="w-4 h-4" /></Button>
-            <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s + 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomIn className="w-4 h-4" /></Button>
-          </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center space-x-2"
           >
-            <Filter className="w-4 h-4" />
-            <span>Filters</span>
+            <Filter className="w-4 h-4 mr-2" />
+            Filters
           </Button>
         </div>
+        {showFilters && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select className="input-field">
+                  <option value="">All</option>
+                  <option value="living">Living</option>
+                  <option value="deceased">Deceased</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Generation</label>
+                <select className="input-field">
+                  <option value="">All Generations</option>
+                  <option value="current">Current</option>
+                  <option value="parents">Parents</option>
+                  <option value="grandparents">Grandparents</option>
+                  <option value="children">Children</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <select className="input-field">
+                  <option value="">All Locations</option>
+                  <option value="lagos">Lagos</option>
+                  <option value="enugu">Enugu</option>
+                  <option value="abuja">Abuja</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Main content with right stats sidebar */}
