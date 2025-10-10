@@ -1,62 +1,151 @@
-import { useState } from 'react'
-import { Plus, Search, MapPin, Calendar, Share2, Eye } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Search, MapPin, Calendar, Share2, Eye, X } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 
+interface BurialSite {
+  id: number
+  name: string
+  deceasedName: string
+  birthYear?: string
+  deathYear?: string
+  location: string
+  coordinates: { lat: number; lng: number }
+  description?: string
+  visitNotes?: string
+  lastVisit?: string
+  images: string[]
+  familyAccess?: string[]
+}
+
+const DEFAULT_SITES: BurialSite[] = [
+  {
+    id: 1,
+    name: "Grandfather's Grave",
+    deceasedName: 'Samuel Doe',
+    birthYear: '1925',
+    deathYear: '1995',
+    location: 'Abuja Central Cemetery',
+    coordinates: { lat: 9.0765, lng: 7.3986 },
+    description: 'Final resting place of Samuel Doe, beloved grandfather',
+    visitNotes: 'Well maintained plot with a beautiful headstone',
+    lastVisit: 'March 15, 2024',
+    images: ['placeholder-headstone-1.jpg'],
+    familyAccess: ['John Doe', 'Grace Doe']
+  },
+  {
+    id: 2,
+    name: 'Family Burial Ground',
+    deceasedName: 'Mary Doe',
+    birthYear: '1930',
+    deathYear: '2000',
+    location: 'Enugu Burial Ground',
+    coordinates: { lat: 6.5244, lng: 7.4951 },
+    description: 'Traditional family burial site',
+    visitNotes: 'Located in the eastern section of the cemetery',
+    lastVisit: 'February 20, 2024',
+    images: ['placeholder-headstone-2.jpg'],
+    familyAccess: ['John Doe', 'Michael Doe']
+  },
+  {
+    id: 3,
+    name: "Uncle's Memorial",
+    deceasedName: 'Paul Doe',
+    birthYear: '1970',
+    deathYear: '2020',
+    location: 'Lagos Memorial Garden',
+    coordinates: { lat: 6.5244, lng: 3.3792 },
+    description: 'Memorial for beloved uncle who passed suddenly',
+    visitNotes: 'Peaceful location with flowers',
+    lastVisit: 'January 10, 2024',
+    images: ['placeholder-headstone-3.jpg'],
+    familyAccess: ['John Doe', 'David Doe']
+  }
+]
+
 const BurialSitesPage = () => {
   const [searchTerm, setSearchTerm] = useState('')
+  const [sites, setSites] = useState<BurialSite[]>(DEFAULT_SITES)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [newSite, setNewSite] = useState<Partial<BurialSite>>({
+    name: '',
+    deceasedName: '',
+    birthYear: '',
+    deathYear: '',
+    location: '',
+    coordinates: { lat: 0, lng: 0 },
+    description: '',
+    visitNotes: '',
+    lastVisit: '',
+    images: []
+  })
 
-  // Mock burial sites data
-  const burialSites = [
-    {
-      id: 1,
-      name: "Grandfather's Grave",
-      deceasedName: "Samuel Doe",
-      birthYear: "1925",
-      deathYear: "1995",
-      location: "Abuja Central Cemetery",
-      coordinates: { lat: 9.0765, lng: 7.3986 },
-      description: "Final resting place of Samuel Doe, beloved grandfather",
-      visitNotes: "Well maintained plot with a beautiful headstone",
-      lastVisit: "March 15, 2024",
-      images: ["placeholder-headstone-1.jpg"],
-      familyAccess: ["John Doe", "Grace Doe"]
-    },
-    {
-      id: 2,
-      name: "Family Burial Ground",
-      deceasedName: "Mary Doe",
-      birthYear: "1930",
-      deathYear: "2000",
-      location: "Enugu Burial Ground",
-      coordinates: { lat: 6.5244, lng: 7.4951 },
-      description: "Traditional family burial site",
-      visitNotes: "Located in the eastern section of the cemetery",
-      lastVisit: "February 20, 2024",
-      images: ["placeholder-headstone-2.jpg"],
-      familyAccess: ["John Doe", "Michael Doe"]
-    },
-    {
-      id: 3,
-      name: "Uncle's Memorial",
-      deceasedName: "Paul Doe",
-      birthYear: "1970",
-      deathYear: "2020",
-      location: "Lagos Memorial Garden",
-      coordinates: { lat: 6.5244, lng: 3.3792 },
-      description: "Memorial for beloved uncle who passed suddenly",
-      visitNotes: "Peaceful location with flowers",
-      lastVisit: "January 10, 2024",
-      images: ["placeholder-headstone-3.jpg"],
-      familyAccess: ["John Doe", "David Doe"]
+  // Load from localStorage and merge with defaults
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
+    if (saved.length > 0) {
+      const defaultIds = new Set(DEFAULT_SITES.map(s => s.id))
+      const onlyNew = saved.filter(s => !defaultIds.has(s.id))
+      setSites([...DEFAULT_SITES, ...onlyNew])
+    } else {
+      setSites(DEFAULT_SITES)
     }
-  ]
+  }, [])
 
-  const stats = {
-    totalSites: burialSites.length,
-    visitsThisYear: 8,
-    sitesWithPhotos: 3,
+  const stats = useMemo(() => ({
+    totalSites: sites.length,
+    visitsThisYear: sites.filter(s => (s.lastVisit || '').includes('2024')).length,
+    sitesWithPhotos: sites.filter(s => s.images && s.images.length > 0).length,
     familyMembers: 4
+  }), [sites])
+
+  const filteredSites = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase()
+    if (!q) return sites
+    return sites.filter(s =>
+      [s.name, s.deceasedName, s.location].some(val => (val || '').toLowerCase().includes(q))
+    )
+  }, [searchTerm, sites])
+
+  const openModal = () => setIsModalOpen(true)
+  const closeModal = () => setIsModalOpen(false)
+
+  const handleNewSiteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    if (name === 'lat' || name === 'lng') {
+      setNewSite(prev => ({ ...prev, coordinates: { lat: name === 'lat' ? Number(value) : (prev.coordinates?.lat || 0), lng: name === 'lng' ? Number(value) : (prev.coordinates?.lng || 0) } }))
+      return
+    }
+    setNewSite(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleSaveSite = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newSite.name || !newSite.deceasedName || !newSite.location) {
+      alert('Please fill in Name, Deceased Name, and Location')
+      return
+    }
+    const payload: BurialSite = {
+      id: Date.now(),
+      name: newSite.name!,
+      deceasedName: newSite.deceasedName!,
+      birthYear: newSite.birthYear || undefined,
+      deathYear: newSite.deathYear || undefined,
+      location: newSite.location!,
+      coordinates: newSite.coordinates || { lat: 0, lng: 0 },
+      description: newSite.description || undefined,
+      visitNotes: newSite.visitNotes || undefined,
+      lastVisit: newSite.lastVisit || undefined,
+      images: newSite.images || []
+    }
+
+    const existing = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
+    existing.push(payload)
+    localStorage.setItem('burialSites', JSON.stringify(existing))
+
+    setSites(prev => [...prev, payload])
+    setIsModalOpen(false)
+    setNewSite({ name: '', deceasedName: '', birthYear: '', deathYear: '', location: '', coordinates: { lat: 0, lng: 0 }, description: '', visitNotes: '', lastVisit: '', images: [] })
   }
 
   return (
@@ -68,7 +157,7 @@ const BurialSitesPage = () => {
           <p className="text-gray-600">Map and preserve ancestral burial locations</p>
         </div>
         <div className="flex space-x-3">
-          <Button className="flex items-center space-x-2">
+          <Button className="flex items-center space-x-2" onClick={openModal}>
             <Plus className="w-4 h-4" />
             <span>Add Site</span>
           </Button>
@@ -84,7 +173,6 @@ const BurialSitesPage = () => {
             <p className="text-sm text-gray-600">Total Sites</p>
           </div>
         </Card>
-        
         <Card hoverable={false}>
           <div className="text-center">
             <Calendar className="w-8 h-8 text-ancestor-secondary mx-auto mb-2" />
@@ -92,7 +180,6 @@ const BurialSitesPage = () => {
             <p className="text-sm text-gray-600">Visits This Year</p>
           </div>
         </Card>
-        
         <Card hoverable={false}>
           <div className="text-center">
             <Eye className="w-8 h-8 text-green-600 mx-auto mb-2" />
@@ -100,7 +187,6 @@ const BurialSitesPage = () => {
             <p className="text-sm text-gray-600">With Photos</p>
           </div>
         </Card>
-        
         <Card hoverable={false}>
           <div className="text-center">
             <Calendar className="w-8 h-8 text-ancestor-accent mx-auto mb-2" />
@@ -147,14 +233,14 @@ const BurialSitesPage = () => {
 
       {/* Burial Sites List */}
       <div className="space-y-6">
-        {burialSites.map((site) => (
+        {filteredSites.map((site) => (
           <Card key={site.id} className="hover:shadow-lg transition-shadow">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Site Image */}
               <div className="lg:col-span-1">
                 <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
                   <img 
-                    src={site.images[0]} 
+                    src={site.images[0] || ''} 
                     alt={site.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -172,7 +258,7 @@ const BurialSitesPage = () => {
                     <p className="text-lg text-gray-600 mb-2">{site.deceasedName}</p>
                     <div className="flex items-center text-gray-500 mb-4">
                       <Calendar className="w-4 h-4 mr-2" />
-                      <span>{site.birthYear} - {site.deathYear}</span>
+                      <span>{(site.birthYear || '—')} - {(site.deathYear || '—')}</span>
                     </div>
                   </div>
                   
@@ -197,7 +283,7 @@ const BurialSitesPage = () => {
                   
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Last Visit</h4>
-                    <p className="text-sm text-gray-600">{site.lastVisit}</p>
+                    <p className="text-sm text-gray-600">{site.lastVisit || '—'}</p>
                   </div>
                 </div>
 
@@ -238,16 +324,73 @@ const BurialSitesPage = () => {
       </div>
 
       {/* Empty State */}
-      {burialSites.length === 0 && (
+      {filteredSites.length === 0 && (
         <Card className="text-center py-12">
           <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No burial sites mapped yet</h3>
           <p className="text-gray-600 mb-6">Start preserving ancestral burial locations by adding your first site.</p>
-          <Button>
+          <Button onClick={openModal}>
             <Plus className="w-4 h-4 mr-2" />
             Add Burial Site
           </Button>
         </Card>
+      )}
+
+      {/* Add Site Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={closeModal} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-ancestor-dark">Add Burial Site</h3>
+              <button onClick={closeModal} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-500" /></button>
+            </div>
+            <form onSubmit={handleSaveSite} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Site Name *</label>
+                  <input name="name" value={newSite.name as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., Grandfather's Grave" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Deceased Name *</label>
+                  <input name="deceasedName" value={newSite.deceasedName as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., Samuel Doe" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Birth Year</label>
+                  <input name="birthYear" value={newSite.birthYear as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 1925" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Death Year</label>
+                  <input name="deathYear" value={newSite.deathYear as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 1995" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                  <input name="location" value={newSite.location as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., Abuja Central Cemetery" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                  <input name="lat" value={newSite.coordinates?.lat ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 9.0765" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
+                  <input name="lng" value={newSite.coordinates?.lng ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 7.3986" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <textarea name="description" value={newSite.description as string} onChange={handleNewSiteChange} className="input-field resize-none" rows={3} placeholder="Notes about the site..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Visit</label>
+                  <input name="lastVisit" value={newSite.lastVisit as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., March 15, 2024" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
+                <Button type="submit">Save Site</Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   )
