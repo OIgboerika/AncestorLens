@@ -151,13 +151,13 @@ const BurialSitesPage = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-ancestor-dark mb-2">Burial Sites</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-ancestor-dark mb-2">Burial Sites</h1>
           <p className="text-gray-600">Map and preserve ancestral burial locations</p>
         </div>
         <div className="flex space-x-3">
-          <Button className="flex items-center space-x-2" onClick={openModal}>
+          <Button className="flex items-center space-x-2 w-full sm:w-auto" onClick={openModal}>
             <Plus className="w-4 h-4" />
             <span>Add Site</span>
           </Button>
@@ -165,7 +165,7 @@ const BurialSitesPage = () => {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <Card hoverable={false}>
           <div className="text-center">
             <MapPin className="w-8 h-8 text-ancestor-primary mx-auto mb-2" />
@@ -309,10 +309,20 @@ const BurialSitesPage = () => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => alert(`Viewing details for ${site.name}`)}>
                       View Details
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const visitDate = prompt('Enter visit date (e.g., March 15, 2024):')
+                      if (visitDate) {
+                        const updatedSites = sites.map(s => 
+                          s.id === site.id ? { ...s, lastVisit: visitDate } : s
+                        )
+                        setSites(updatedSites)
+                        localStorage.setItem('burialSites', JSON.stringify(updatedSites.filter(s => !DEFAULT_SITES.some(ds => ds.id === s.id))))
+                        alert('Visit recorded successfully!')
+                      }
+                    }}>
                       Add Visit
                     </Button>
                   </div>

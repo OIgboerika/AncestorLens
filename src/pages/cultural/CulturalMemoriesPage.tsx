@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Filter, Play, Calendar, User, MapPin, MoreHorizontal, SlidersHorizontal, Image as ImageIcon, Headphones } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
@@ -31,10 +31,19 @@ const MOCK: MemoryItem[] = [
 export default function CulturalMemoriesPage() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string | null>(null)
+  const [memories, setMemories] = useState<MemoryItem[]>(MOCK)
 
   const categories = ['All', 'Ceremony', 'Daily Life', 'Migration', 'Folklore', 'Food', 'Music']
 
-  const filtered = MOCK.filter(m =>
+  // Load saved memories from localStorage
+  useEffect(() => {
+    const savedMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+    if (savedMemories.length > 0) {
+      setMemories([...MOCK, ...savedMemories])
+    }
+  }, [])
+
+  const filtered = memories.filter(m =>
     (category && category !== 'All' ? m.category === category : true) &&
     (search ? (m.title + m.description).toLowerCase().includes(search.toLowerCase()) : true)
   )
@@ -42,13 +51,13 @@ export default function CulturalMemoriesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-ancestor-dark">Cultural Memories</h1>
-          <p className="text-gray-600">Preserve and explore your family’s oral traditions and visual memories</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-ancestor-dark">Cultural Memories</h1>
+          <p className="text-gray-600">Preserve and explore your family's oral traditions and visual memories</p>
         </div>
         <Link to="/upload-memory">
-          <Button className="flex items-center gap-2"><Plus className="w-4 h-4" /> Upload Memory</Button>
+          <Button className="flex items-center gap-2 w-full sm:w-auto"><Plus className="w-4 h-4" /> Upload Memory</Button>
         </Link>
       </div>
 
@@ -72,7 +81,7 @@ export default function CulturalMemoriesPage() {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filtered.map(m => (
           <Card key={m.id} className="hover:shadow-lg transition-shadow">
             {/* Media preview */}

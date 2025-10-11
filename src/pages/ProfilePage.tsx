@@ -64,7 +64,7 @@ export default function ProfilePage() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
         {/* Main */}
         <div className="lg:col-span-2 space-y-8">
           <Card>
@@ -119,9 +119,12 @@ export default function ProfilePage() {
           <Card>
             <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start"><Shield className="w-4 h-4 mr-3" /> Privacy Settings</Button>
-              <Button variant="outline" className="w-full justify-start"><Settings className="w-4 h-4 mr-3" /> Account Settings</Button>
-              <Button variant="outline" className="w-full justify-start"><Share2 className="w-4 h-4 mr-3" /> Share Profile</Button>
+              <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = '/privacy-settings'}><Shield className="w-4 h-4 mr-3" /> Privacy Settings</Button>
+              <Button variant="outline" className="w-full justify-start" onClick={() => alert('Account Settings coming soon!')}><Settings className="w-4 h-4 mr-3" /> Account Settings</Button>
+              <Button variant="outline" className="w-full justify-start" onClick={() => {
+                navigator.clipboard.writeText(window.location.href)
+                alert('Profile link copied to clipboard!')
+              }}><Share2 className="w-4 h-4 mr-3" /> Share Profile</Button>
             </div>
           </Card>
 

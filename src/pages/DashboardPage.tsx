@@ -34,7 +34,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Feature cards row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
         <Card className="border border-gray-200">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-full bg-ancestor-primary/10 text-ancestor-primary flex items-center justify-center">
@@ -82,7 +82,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Privacy + Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="border border-gray-200">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-full bg-gray-100 text-ancestor-dark flex items-center justify-center">

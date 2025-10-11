@@ -163,7 +163,7 @@ const FamilyTreeBuilderPage = () => {
         <Card>
           <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Basic Information</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Input
               label="First Name *"
               name="firstName"
@@ -191,7 +191,7 @@ const FamilyTreeBuilderPage = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
               <select
@@ -267,7 +267,7 @@ const FamilyTreeBuilderPage = () => {
         <Card>
           <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Dates and Places</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <Input
                 label="Birth Date"
@@ -310,7 +310,7 @@ const FamilyTreeBuilderPage = () => {
         <Card>
           <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Contact Information</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Email"
               name="email"
@@ -344,7 +344,7 @@ const FamilyTreeBuilderPage = () => {
         <Card>
           <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Family Relationships</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Relationship to You *

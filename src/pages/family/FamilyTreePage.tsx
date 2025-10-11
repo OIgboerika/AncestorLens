@@ -133,12 +133,12 @@ export default function FamilyTreePage() {
         className="group relative flex flex-col items-center"
         title={`${member.name} • ${member.relationship}`}
       >
-        <div className={`w-16 h-16 rounded-full ring-2 ${ringColor} ring-offset-2 overflow-hidden bg-gray-200 flex items-center justify-center`}
+        <div className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full ring-2 ${ringColor} ring-offset-2 overflow-hidden bg-gray-200 flex items-center justify-center`}
           style={hasImage ? { backgroundImage: `url(${member.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
-          {!hasImage && <span className="text-gray-600 font-semibold">{initials}</span>}
+          {!hasImage && <span className="text-gray-600 font-semibold text-xs sm:text-sm">{initials}</span>}
         </div>
         <div className="mt-2 text-center">
-          <p className="text-sm font-medium text-gray-900 leading-tight max-w-[160px] truncate">{member.name}</p>
+          <p className="text-xs sm:text-sm font-medium text-gray-900 leading-tight max-w-[120px] sm:max-w-[140px] lg:max-w-[160px] truncate">{member.name}</p>
           <p className="text-xs text-gray-500">{subtitle}</p>
         </div>
       </button>
@@ -150,9 +150,9 @@ export default function FamilyTreePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-ancestor-dark mb-2">Family Tree</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-ancestor-dark mb-2">Family Tree</h1>
           <p className="text-gray-600">Explore your family history and connections</p>
         </div>
         <div className="flex items-center gap-2">
@@ -163,7 +163,7 @@ export default function FamilyTreePage() {
           <Link to="/family-tree/builder">
             <Button className="flex items-center space-x-2">
               <Plus className="w-4 h-4" />
-              <span>Add Member</span>
+              <span className="hidden sm:inline">Add Member</span>
             </Button>
           </Link>
         </div>
@@ -229,11 +229,11 @@ export default function FamilyTreePage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Tree Canvas */}
         <Card className="lg:col-span-9 overflow-auto">
-          <div className="relative min-w-[900px] py-10">
+          <div className="relative min-w-[600px] sm:min-w-[800px] lg:min-w-[900px] py-10">
             {/* Zoomable content wrapper */}
-            <div className="origin-top-left" style={{ transform: `scale(${scale})` }}>
+            <div className="origin-center" style={{ transform: `scale(${scale})` }}>
               {/* Grandparents row */}
-              <div className="flex justify-center gap-24 relative">
+              <div className="flex justify-center gap-12 sm:gap-16 lg:gap-24 relative">
                 {familyData.grandparents.map((m) => (
                   <div key={m.id} className="flex flex-col items-center">
                     <Node member={m} />
@@ -248,7 +248,7 @@ export default function FamilyTreePage() {
               </div>
 
               {/* Parents row */}
-              <div className="mt-4 flex justify-center gap-48 relative">
+              <div className="mt-4 flex justify-center gap-24 sm:gap-32 lg:gap-48 relative">
                 {familyData.parents.map((m) => (
                   <div key={m.id} className="flex flex-col items-center">
                     <Node member={m} />
@@ -278,7 +278,7 @@ export default function FamilyTreePage() {
                     <div className="mx-6 h-px w-48 bg-gray-400"></div>
                     <div className="h-6 w-px bg-gray-400"></div>
                   </div>
-                  <div className="mt-4 flex justify-center gap-32">
+                  <div className="mt-4 flex justify-center gap-16 sm:gap-24 lg:gap-32">
                     {familyData.children.map((m) => (
                       <div key={m.id} className="flex flex-col items-center">
                         <Node member={m} />
