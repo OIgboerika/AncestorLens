@@ -1,4 +1,6 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
+import { AuthProvider } from './contexts/AuthContext'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 import Layout from './components/Layout/Layout'
 import DashboardPage from './pages/DashboardPage'
 import FamilyTreePage from './pages/family/FamilyTreePage'
@@ -34,26 +36,28 @@ function Home() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignUpPage />} />
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
 
-      {/* Layout parent with Outlet */}
-      <Route element={<Layout />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/family-tree" element={<FamilyTreePage />} />
-        <Route path="/family-tree/builder" element={<FamilyTreeBuilderPage />} />
-        <Route path="/family-tree/member/:id" element={<FamilyMemberDetailsPage />} />
-        <Route path="/burial-sites" element={<BurialSitesPage />} />
-        <Route path="/cultural-memories" element={<CulturalMemoriesPage />} />
-        <Route path="/cultural-memories/:id" element={<CulturalMemoryDetailsPage />} />
-        <Route path="/upload-memory" element={<UploadMemoryPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/privacy-settings" element={<PrivacySettingsPage />} />
-      </Route>
+        {/* Protected routes with Layout */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/family-tree" element={<FamilyTreePage />} />
+          <Route path="/family-tree/builder" element={<FamilyTreeBuilderPage />} />
+          <Route path="/family-tree/member/:id" element={<FamilyMemberDetailsPage />} />
+          <Route path="/burial-sites" element={<BurialSitesPage />} />
+          <Route path="/cultural-memories" element={<CulturalMemoriesPage />} />
+          <Route path="/cultural-memories/:id" element={<CulturalMemoryDetailsPage />} />
+          <Route path="/upload-memory" element={<UploadMemoryPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/privacy-settings" element={<PrivacySettingsPage />} />
+        </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
   )
 }
