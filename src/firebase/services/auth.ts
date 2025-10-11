@@ -1,8 +1,13 @@
 import { auth } from '../config'
-
-// Check if Firebase is properly configured
-const isFirebaseConfigured = import.meta.env.VITE_FIREBASE_API_KEY && 
-  import.meta.env.VITE_FIREBASE_PROJECT_ID
+import { 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
+} from 'firebase/auth'
 
 // Mock User type for when Firebase is not configured
 interface MockUser {
@@ -23,21 +28,24 @@ export const authService = {
   // Sign in with email and password
   signIn: async (email: string, password: string) => {
     try {
-      if (isFirebaseConfigured && auth.signInWithEmailAndPassword) {
-        const userCredential = await auth.signInWithEmailAndPassword(email, password)
-        return userCredential.user
-      } else {
-        // Mock implementation
-        console.log('Mock sign in:', email)
-        const mockUser: MockUser = {
-          uid: 'demo-uid',
-          email: email,
-          displayName: 'Demo User',
-          photoURL: null,
-        }
-        return mockUser
-      }
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      return userCredential.user
     } catch (error) {
+      throw error
+    }
+  },
+
+  // Sign in with Google
+  signInWithGoogle: async () => {
+    try {
+      console.log('Google Sign-In Debug:', { auth })
+      
+      const provider = new GoogleAuthProvider()
+      const result = await signInWithPopup(auth, provider)
+      console.log('Google Sign-In Success:', result.user)
+      return result.user
+    } catch (error) {
+      console.error('Google Sign-In Error:', error)
       throw error
     }
   },
@@ -45,23 +53,11 @@ export const authService = {
   // Create new user account
   signUp: async (email: string, password: string, displayName?: string) => {
     try {
-      if (isFirebaseConfigured && auth.createUserWithEmailAndPassword) {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password)
-        if (displayName && auth.updateProfile) {
-          await auth.updateProfile(userCredential.user, { displayName })
-        }
-        return userCredential.user
-      } else {
-        // Mock implementation
-        console.log('Mock sign up:', email, displayName)
-        const mockUser: MockUser = {
-          uid: 'demo-uid',
-          email: email,
-          displayName: displayName || 'Demo User',
-          photoURL: null,
-        }
-        return mockUser
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      if (displayName) {
+        await updateProfile(userCredential.user, { displayName })
       }
+      return userCredential.user
     } catch (error) {
       throw error
     }
@@ -70,12 +66,7 @@ export const authService = {
   // Sign out current user
   signOut: async () => {
     try {
-      if (isFirebaseConfigured && auth.signOut) {
-        await auth.signOut()
-      } else {
-        // Mock implementation
-        console.log('Mock sign out')
-      }
+      await signOut(auth)
     } catch (error) {
       throw error
     }
@@ -83,21 +74,12 @@ export const authService = {
 
   // Get current user
   getCurrentUser: (): MockUser | null => {
-    if (isFirebaseConfigured && auth.currentUser) {
-      return auth.currentUser
-    }
-    return null
+    return auth.currentUser
   },
 
   // Listen to auth state changes
   onAuthStateChanged: (callback: (user: MockUser | null) => void) => {
-    if (isFirebaseConfigured && auth.onAuthStateChanged) {
-      return auth.onAuthStateChanged(callback)
-    } else {
-      // Mock implementation - immediately call callback with null
-      callback(null)
-      return () => {} // unsubscribe function
-    }
+    return onAuthStateChanged(auth, callback)
   },
 
   // Convert Firebase User to our AuthUser interface

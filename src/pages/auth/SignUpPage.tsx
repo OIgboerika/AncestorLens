@@ -2,19 +2,55 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react'
 import Button from '../../components/ui/Button/Button'
+import { useAuth } from '../../contexts/AuthContext'
 
 const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [formData, setFormData] = useState({ fullName: '', username: '', password: '', confirmPassword: '', agreeToTerms: false })
+  const [formData, setFormData] = useState({ fullName: '', email: '', password: '', confirmPassword: '', agreeToTerms: false })
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { signUp, signInWithGoogle } = useAuth()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (formData.password !== formData.confirmPassword) return alert('Passwords do not match')
-    if (!formData.agreeToTerms) return alert('Please agree to the terms and conditions')
-    navigate('/dashboard')
+    setError('')
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+    if (!formData.agreeToTerms) {
+      setError('Please agree to the terms and conditions')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      await signUp(formData.email, formData.password, formData.fullName)
+      navigate('/dashboard')
+    } catch (error: any) {
+      setError(error.message || 'Failed to create account')
+    } finally {
+      setLoading(false)
+    }
   }
+  const handleGoogleSignIn = async () => {
+    setError('')
+    setLoading(true)
+
+    try {
+      await signInWithGoogle()
+      navigate('/dashboard')
+    } catch (error: any) {
+      setError(error.message || 'Failed to sign in with Google')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
     setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value })
@@ -43,6 +79,12 @@ const SignUpPage = () => {
           <h2 className="text-2xl font-extrabold text-ancestor-dark text-center">Join our community today!</h2>
           <p className="text-center text-sm text-gray-600 mt-1">Enjoy stories, connect with heritage, and preserve your legacy.</p>
 
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
@@ -52,10 +94,10 @@ const SignUpPage = () => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                <input name="username" value={formData.username} onChange={handleChange} placeholder="Username" className="input-field pl-9" required />
+                <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" className="input-field pl-9" required />
               </div>
             </div>
             <div>
@@ -78,16 +120,35 @@ const SignUpPage = () => {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full">Create account</Button>
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="agreeToTerms"
+                checked={formData.agreeToTerms}
+                onChange={handleChange}
+                className="h-4 w-4 text-ancestor-primary focus:ring-ancestor-primary border-gray-300 rounded"
+                required
+              />
+              <label className="ml-2 block text-sm text-gray-700">
+                I agree to the{' '}
+                <Link to="#" className="text-ancestor-primary hover:text-ancestor-dark">
+                  Terms and Conditions
+                </Link>
+              </label>
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Creating Account...' : 'Create account'}
+            </Button>
             <div className="text-center text-sm text-gray-500">or sign up with</div>
             <div className="flex items-center gap-3">
-              <button type="button" className="flex-1 inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50">
+              <button 
+                type="button" 
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+                className="flex-1 inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="google" className="w-4 h-4" />
-                <span className="text-sm">Google</span>
-              </button>
-              <button type="button" className="flex-1 inline-flex items-center justify-center gap-2 border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50">
-                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-[#1877F2]"><path d="M22.676 0H1.324C.593 0 0 .593 0 1.324v21.352C0 23.407.593 24 1.324 24h11.495v-9.294H9.691V11.09h3.128V8.414c0-3.1 1.893-4.79 4.658-4.79 1.325 0 2.464.099 2.796.143v3.241l-1.919.001c-1.505 0-1.797.716-1.797 1.766v2.316h3.592l-.468 3.616h-3.124V24h6.127C23.407 24 24 23.407 24 22.676V1.324C24 .593 23.407 0 22.676 0z"/></svg>
-                <span className="text-sm">Facebook</span>
+                <span className="text-sm">{loading ? 'Signing up...' : 'Google'}</span>
               </button>
             </div>
             <div className="text-center text-sm text-gray-600">Already have an account? <Link to="/login" className="text-ancestor-primary hover:text-ancestor-dark">Sign in</Link></div>

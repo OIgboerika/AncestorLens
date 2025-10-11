@@ -6,6 +6,7 @@ interface AuthContextType {
   loading: boolean
   signIn: (email: string, password: string) => Promise<any>
   signUp: (email: string, password: string, displayName?: string) => Promise<any>
+  signInWithGoogle: () => Promise<any>
   signOut: () => Promise<void>
 }
 
@@ -58,6 +59,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const signInWithGoogle = async () => {
+    setLoading(true)
+    try {
+      const firebaseUser = await authService.signInWithGoogle()
+      setUser(authService.convertUser(firebaseUser))
+      return firebaseUser
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const signOut = async () => {
     setLoading(true)
     try {
@@ -73,6 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
   }
 

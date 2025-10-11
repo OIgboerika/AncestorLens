@@ -4,15 +4,14 @@ import {
   MapPin,
   Mic,
   Shield,
-  ArrowRight,
-  ChevronRight,
   Image as Camera,
 } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
-import Button from '../components/ui/Button/Button'
+import { useAuth } from '../contexts/AuthContext'
 
 const DashboardPage = () => {
-  const userFirstName = 'Onochie'
+  const { user } = useAuth()
+  const userFirstName = user?.displayName?.split(' ')[0] || 'User'
 
   const activities = [
     { id: 1, icon: Camera, text: 'John Adebayo added a new photo to the Family Tree.', time: '5 minutes ago' },
