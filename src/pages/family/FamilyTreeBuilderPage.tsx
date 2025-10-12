@@ -14,9 +14,12 @@ import {
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import Input from '../../components/ui/Input/Input'
+import { useAuth } from '../../contexts/AuthContext'
+import { activityService } from '../../firebase/services/activityService'
 
 const FamilyTreeBuilderPage = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -102,6 +105,11 @@ const FamilyTreeBuilderPage = () => {
     const existingMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
     existingMembers.push(payload)
     localStorage.setItem('familyMembers', JSON.stringify(existingMembers))
+    
+    // Log activity
+    if (user?.uid) {
+      activityService.logFamilyMemberAdded(user.uid, payload.name, payload.id.toString())
+    }
     
     console.log('Family member added:', payload)
     alert('Family member added successfully!')

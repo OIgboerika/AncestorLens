@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Search, MapPin, Calendar, Share2, Eye, X } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
+import { useAuth } from '../contexts/AuthContext'
+import { activityService } from '../firebase/services/activityService'
 
 interface BurialSite {
   id: number
@@ -64,6 +66,7 @@ const DEFAULT_SITES: BurialSite[] = [
 ]
 
 const BurialSitesPage = () => {
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [sites, setSites] = useState<BurialSite[]>(DEFAULT_SITES)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -142,6 +145,11 @@ const BurialSitesPage = () => {
     const existing = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
     existing.push(payload)
     localStorage.setItem('burialSites', JSON.stringify(existing))
+
+    // Log activity
+    if (user?.uid) {
+      activityService.logBurialSiteAdded(user.uid, payload.name, payload.id.toString())
+    }
 
     setSites(prev => [...prev, payload])
     setIsModalOpen(false)

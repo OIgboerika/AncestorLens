@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { updateProfile } from 'firebase/auth'
 import { auth } from '../firebase/config'
 import { userProfileService } from '../firebase/services/userProfileService'
+import { activityService } from '../firebase/services/activityService'
 
 export default function ProfilePage() {
   const { user } = useAuth()
@@ -86,17 +87,20 @@ export default function ProfilePage() {
         })
 
         // Update Firestore profile with additional data
-        await userProfileService.updateUserProfile({
-          uid: user.uid,
-          displayName: userData.name,
-          email: userData.email,
-          phone: userData.phone,
-          location: userData.location,
-          bio: userData.bio,
-          photoURL: userData.profileImage
-        })
+               await userProfileService.updateUserProfile({
+                 uid: user.uid,
+                 displayName: userData.name,
+                 email: userData.email,
+                 phone: userData.phone,
+                 location: userData.location,
+                 bio: userData.bio,
+                 photoURL: userData.profileImage
+               })
 
-        console.log('Profile updated successfully')
+               // Log activity
+               await activityService.logProfileUpdated(user.uid)
+
+               console.log('Profile updated successfully')
       }
       setIsEditing(false)
     } catch (error) {

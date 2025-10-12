@@ -3,9 +3,12 @@ import { ArrowLeft, Mic, Upload, Save, FileAudio, Image as ImageIcon } from 'luc
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
+import { activityService } from '../../firebase/services/activityService'
 
 export default function UploadMemoryPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [mediaType, setMediaType] = useState<'audio' | 'image'>('audio')
   const [isRecording, setIsRecording] = useState(false)
   const [audioFile, setAudioFile] = useState<File | null>(null)
@@ -74,6 +77,11 @@ export default function UploadMemoryPage() {
     const existingMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
     existingMemories.push(newMemory)
     localStorage.setItem('culturalMemories', JSON.stringify(existingMemories))
+
+    // Log activity
+    if (user?.uid) {
+      activityService.logMemoryUploaded(user.uid, newMemory.title, newMemory.id.toString(), mediaType)
+    }
 
     alert('Memory uploaded successfully!')
     navigate('/cultural-memories')
