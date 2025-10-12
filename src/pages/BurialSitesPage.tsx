@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Search, MapPin, Calendar, Share2, Eye, X } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
+import GoogleMap from '../components/ui/GoogleMap/GoogleMap'
 import { useAuth } from '../contexts/AuthContext'
 import { activityService } from '../firebase/services/activityService'
 
@@ -69,6 +70,8 @@ const BurialSitesPage = () => {
   const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [sites, setSites] = useState<BurialSite[]>(DEFAULT_SITES)
+  const [showMap, setShowMap] = useState(false)
+  const [selectedSite, setSelectedSite] = useState<BurialSite | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [newSite, setNewSite] = useState<Partial<BurialSite>>({
     name: '',
@@ -122,6 +125,17 @@ const BurialSitesPage = () => {
     setNewSite(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleMapClick = (lat: number, lng: number) => {
+    setNewSite(prev => ({ ...prev, coordinates: { lat, lng } }))
+  }
+
+  const handleMarkerClick = (siteId: string) => {
+    const site = sites.find(s => s.id.toString() === siteId)
+    if (site) {
+      setSelectedSite(site)
+    }
+  }
+
   const handleSaveSite = (e: React.FormEvent) => {
     e.preventDefault()
     if (!newSite.name || !newSite.deceasedName || !newSite.location) {
@@ -165,6 +179,14 @@ const BurialSitesPage = () => {
           <p className="text-gray-600">Map and preserve ancestral burial locations</p>
         </div>
         <div className="flex space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowMap(!showMap)} 
+            className="flex items-center space-x-2 w-full sm:w-auto"
+          >
+            <MapPin className="w-4 h-4" />
+            <span>{showMap ? 'List View' : 'Map View'}</span>
+          </Button>
           <Button className="flex items-center space-x-2 w-full sm:w-auto" onClick={openModal}>
             <Plus className="w-4 h-4" />
             <span>Add Site</span>
@@ -239,8 +261,51 @@ const BurialSitesPage = () => {
         </div>
       </Card>
 
-      {/* Burial Sites List */}
-      <div className="space-y-6">
+      {/* Map or List View */}
+      {showMap ? (
+        <Card className="mb-8">
+          <div className="p-4">
+            <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Burial Sites Map</h3>
+            <GoogleMap
+              center={{ lat: 9.0765, lng: 7.3986 }} // Default to Abuja, Nigeria
+              zoom={10}
+              markers={sites.map(site => ({
+                id: site.id.toString(),
+                position: site.coordinates,
+                title: site.name,
+                info: `${site.deceasedName} (${site.birthYear || 'Unknown'} - ${site.deathYear || 'Unknown'})`
+              }))}
+              onMarkerClick={handleMarkerClick}
+              height="500px"
+              className="rounded-lg overflow-hidden"
+            />
+            {selectedSite && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-900">{selectedSite.name}</h4>
+                <p className="text-sm text-gray-600 mt-1">{selectedSite.deceasedName}</p>
+                <p className="text-sm text-gray-500">{selectedSite.location}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      ) : (
+        <>
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder="Search burial sites..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input-field pl-9"
+              />
+            </div>
+          </div>
+
+          {/* Burial Sites List */}
+          <div className="space-y-6">
         {filteredSites.map((site) => (
           <Card key={site.id} className="hover:shadow-lg transition-shadow">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -353,6 +418,8 @@ const BurialSitesPage = () => {
           </Button>
         </Card>
       )}
+        </>
+      )}
 
       {/* Add Site Modal */}
       {isModalOpen && (
@@ -385,13 +452,28 @@ const BurialSitesPage = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
                   <input name="location" value={newSite.location as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., Abuja Central Cemetery" required />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
-                  <input name="lat" value={newSite.coordinates?.lat ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 9.0765" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
-                  <input name="lng" value={newSite.coordinates?.lng ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 7.3986" />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location Coordinates</label>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+                      <input name="lat" value={newSite.coordinates?.lat ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 9.0765" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+                      <input name="lng" value={newSite.coordinates?.lng ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 7.3986" />
+                    </div>
+                  </div>
+                  <div className="rounded-lg overflow-hidden border border-gray-200">
+                    <GoogleMap
+                      center={{ lat: newSite.coordinates?.lat || 9.0765, lng: newSite.coordinates?.lng || 7.3986 }}
+                      zoom={15}
+                      onMapClick={handleMapClick}
+                      height="300px"
+                      className="w-full"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Click on the map to set coordinates</p>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>

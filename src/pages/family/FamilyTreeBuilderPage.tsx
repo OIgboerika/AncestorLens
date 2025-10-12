@@ -106,6 +106,9 @@ const FamilyTreeBuilderPage = () => {
     existingMembers.push(payload)
     localStorage.setItem('familyMembers', JSON.stringify(existingMembers))
     
+    console.log('Family Tree Builder - Saved payload:', payload)
+    console.log('Family Tree Builder - All members:', existingMembers)
+    
     // Log activity
     if (user?.uid) {
       activityService.logFamilyMemberAdded(user.uid, payload.name, payload.id.toString())

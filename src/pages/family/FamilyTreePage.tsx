@@ -52,6 +52,7 @@ export default function FamilyTreePage() {
   useEffect(() => {
     const loadFamilyMembers = () => {
       const savedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+      console.log('Family Tree - Loaded saved members:', savedMembers)
       
       // Get existing mock members
       const mockMembers = {
@@ -74,12 +75,37 @@ export default function FamilyTreePage() {
       
       // Merge saved members with mock members, avoiding duplicates
       const mergedData = {
-        currentGeneration: [...mockMembers.currentGeneration, ...savedMembers.filter((m: FamilyMember) => m.relationship === 'Self' && !mockMembers.currentGeneration.some(existing => existing.id === m.id))],
-        parents: [...mockMembers.parents, ...savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship) && !mockMembers.parents.some(existing => existing.id === m.id))],
-        grandparents: [...mockMembers.grandparents, ...savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother'].includes(m.relationship) && !mockMembers.grandparents.some(existing => existing.id === m.id))],
-        children: [...mockMembers.children, ...savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter'].includes(m.relationship) && !mockMembers.children.some(existing => existing.id === m.id))],
+        currentGeneration: [
+          ...mockMembers.currentGeneration, 
+          ...savedMembers.filter((m: FamilyMember) => 
+            ['Self', 'Husband', 'Partner'].includes(m.relationship) && 
+            !mockMembers.currentGeneration.some(existing => existing.id === m.id)
+          )
+        ],
+        parents: [
+          ...mockMembers.parents, 
+          ...savedMembers.filter((m: FamilyMember) => 
+            ['Father', 'Mother'].includes(m.relationship) && 
+            !mockMembers.parents.some(existing => existing.id === m.id)
+          )
+        ],
+        grandparents: [
+          ...mockMembers.grandparents, 
+          ...savedMembers.filter((m: FamilyMember) => 
+            ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship) && 
+            !mockMembers.grandparents.some(existing => existing.id === m.id)
+          )
+        ],
+        children: [
+          ...mockMembers.children, 
+          ...savedMembers.filter((m: FamilyMember) => 
+            ['Son', 'Daughter', 'Grandson', 'Granddaughter'].includes(m.relationship) && 
+            !mockMembers.children.some(existing => existing.id === m.id)
+          )
+        ],
       }
       
+      console.log('Family Tree - Merged data:', mergedData)
       setFamilyData(mergedData)
     }
     
