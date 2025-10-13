@@ -32,7 +32,7 @@ export default function FamilyTreePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [scale, setScale] = useState(1)
-  const [hideMock, setHideMock] = useState<boolean>(true)
+  const [hideMock] = useState<boolean>(true)
   const [familyData, setFamilyData] = useState<{ grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }>({
     currentGeneration: [],
     parents: [],

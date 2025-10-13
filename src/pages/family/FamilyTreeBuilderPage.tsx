@@ -122,22 +122,22 @@ const FamilyTreeBuilderPage = () => {
       birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
       deathYear: formData.deathDate ? new Date(formData.deathDate).getFullYear().toString() : '',
       location: formData.birthPlace || 'Unknown',
-      image: formData.profileImage ? URL.createObjectURL(formData.profileImage) : undefined
+      image: undefined as string | undefined
     }
     
     // Persist to Firestore when signed in
+    // Convert image to persistent data URL for local/Firestore persistence
+    let imageDataUrl: string | undefined = undefined
     try {
-      if (user?.uid) {
-        // If an image file exists, save a data URL for now (Storage integration can replace later)
-        let imageDataUrl: string | undefined = undefined
-        if (formData.profileImage) {
+      if (formData.profileImage) {
+        imageDataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
-          imageDataUrl = await new Promise<string>((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string)
-            reader.onerror = reject
-            reader.readAsDataURL(formData.profileImage as File)
-          })
-        }
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(formData.profileImage as File)
+        })
+      }
+      if (user?.uid) {
         const firestoreId = await familyService.addFamilyMember(user.uid, {
           name: payload.name,
           firstName: formData.firstName,
@@ -164,7 +164,7 @@ const FamilyTreeBuilderPage = () => {
           hasChildren: undefined,
           hasParents: undefined,
         })
-        payload.id = Number(firestoreId) // convert string id to number
+        payload.id = Number(firestoreId)
         if (imageDataUrl) payload.image = imageDataUrl
       }
     } catch (err) {
@@ -173,7 +173,7 @@ const FamilyTreeBuilderPage = () => {
 
     // Store in localStorage as local cache
     const existingMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
-    existingMembers.push(payload)
+    existingMembers.push({ ...payload, image: imageDataUrl || payload.image })
     localStorage.setItem('familyMembers', JSON.stringify(existingMembers))
     
     console.log('Family Tree Builder - Saved payload:', payload)
