@@ -1,5 +1,5 @@
 import { db } from '../config'
-import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp } from 'firebase/firestore'
+import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp, onSnapshot } from 'firebase/firestore'
 
 export interface Activity {
   id?: string
@@ -57,6 +57,27 @@ export const activityService = {
       console.error('Error fetching user activities:', error)
       return []
     }
+  },
+
+  // Subscribe to recent activities for a user (real-time)
+  subscribeUserActivities(
+    userId: string,
+    limitCount: number,
+    callback: (activities: Activity[]) => void
+  ): () => void {
+    const q = query(
+      collection(db, ACTIVITIES_COLLECTION),
+      where('userId', '==', userId),
+      orderBy('timestamp', 'desc'),
+      limit(limitCount)
+    )
+    return onSnapshot(q, (snapshot) => {
+      const activities: Activity[] = snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as any) }))
+      callback(activities)
+    }, (error) => {
+      console.error('Activity subscription error:', error)
+      callback([])
+    })
   },
 
   // Helper functions for common activity types

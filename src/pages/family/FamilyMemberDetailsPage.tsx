@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { 
   ArrowLeft, 
@@ -28,6 +28,9 @@ interface MemberDetails {
   address?: string
   bio?: string
   profileImage?: string | null
+  image?: string | null
+  relationship?: string
+  heritageTags?: string[]
   relationships?: {
     father?: string
     mother?: string
@@ -62,12 +65,13 @@ const FamilyMemberDetailsPage = () => {
   const location = useLocation() as { state?: { member?: MemberDetails } }
   const [isEditing, setIsEditing] = useState(false)
   const [memberData, setMemberData] = useState<MemberDetails>(MOCK_MEMBER)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load member from navigation state, then localStorage, else mock
   useEffect(() => {
     // 1) From navigation state
     if (location.state?.member) {
-      setMemberData({ ...MOCK_MEMBER, ...location.state.member })
+      setMemberData({ ...location.state.member })
       return
     }
 
@@ -76,7 +80,7 @@ const FamilyMemberDetailsPage = () => {
     const savedMembers: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
     const found = savedMembers.find(m => Number(m.id) === numericId)
     if (found) {
-      setMemberData({ ...MOCK_MEMBER, ...found })
+      setMemberData({ ...found })
       return
     }
 
@@ -85,7 +89,42 @@ const FamilyMemberDetailsPage = () => {
   }, [id, location.state])
 
   const handleEdit = () => setIsEditing(true)
+
+  const fileToDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const dataUrl = await fileToDataUrl(file)
+      setMemberData(prev => ({ ...prev, image: dataUrl, profileImage: dataUrl }))
+    } catch (err) {
+      console.error('Failed to load image', err)
+    }
+  }
+
   const handleSave = () => {
+    try {
+      const all: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+      const idx = all.findIndex(m => Number(m.id) === Number(memberData.id))
+      if (idx !== -1) {
+        all[idx] = { ...all[idx], ...memberData }
+        localStorage.setItem('familyMembers', JSON.stringify(all))
+      }
+    } catch (err) {
+      console.error('Failed to persist member', err)
+    }
     setIsEditing(false)
     console.log('Updated member data:', memberData)
   }
@@ -96,6 +135,17 @@ const FamilyMemberDetailsPage = () => {
   }
 
   const initials = useMemo(() => memberData.name.split(' ').map(n => n[0]).join(''), [memberData.name])
+
+  const relationshipsCount = useMemo(() => {
+    const r = memberData.relationships
+    if (!r) return 0
+    return (
+      (r.father ? 1 : 0) +
+      (r.mother ? 1 : 0) +
+      (r.spouse ? 1 : 0) +
+      (r.children?.length || 0)
+    )
+  }, [memberData.relationships])
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -137,9 +187,11 @@ const FamilyMemberDetailsPage = () => {
           <Card>
             <div className="text-center">
               <div className="w-32 h-32 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden">
-                <span className="text-gray-600 font-bold text-2xl">
-                  {initials}
-                </span>
+                {memberData.image || memberData.profileImage ? (
+                  <img src={memberData.image || (memberData.profileImage as string)} alt={memberData.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-gray-600 font-bold text-2xl">{initials}</span>
+                )}
               </div>
               
               <h2 className="text-xl font-semibold text-gray-900 mb-2">{memberData.name}</h2>
@@ -154,10 +206,13 @@ const FamilyMemberDetailsPage = () => {
               </div>
               
               {isEditing && (
-                <Button variant="outline" size="sm" className="mb-4">
-                  <Camera className="w-4 h-4 mr-2" />
-                  Change Photo
-                </Button>
+                <>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                  <Button variant="outline" size="sm" className="mb-4" onClick={handlePhotoClick}>
+                    <Camera className="w-4 h-4 mr-2" />
+                    Change Photo
+                  </Button>
+                </>
               )}
               
               {/* Quick Stats */}
@@ -170,9 +225,7 @@ const FamilyMemberDetailsPage = () => {
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-600">Relationships</p>
-                  <p className="font-semibold text-gray-900">
-                    {memberData.relationships ? (memberData.relationships.children?.length || 0) + 3 : 0}
-                  </p>
+                  <p className="font-semibold text-gray-900">{relationshipsCount}</p>
                 </div>
               </div>
             </div>
@@ -211,6 +264,19 @@ const FamilyMemberDetailsPage = () => {
 
         {/* Main Details */}
         <div className="lg:col-span-2">
+          {/* Cultural Tags */}
+          <Card className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Cultural Heritage Tags</h3>
+            {memberData.heritageTags && memberData.heritageTags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {memberData.heritageTags.map((tag, idx) => (
+                  <span key={idx} className="px-2 py-1 text-xs rounded-full bg-ancestor-light text-ancestor-primary">{tag}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">—</p>
+            )}
+          </Card>
           {/* Personal Information */}
           <Card className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>

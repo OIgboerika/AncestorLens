@@ -40,23 +40,15 @@ const DashboardPage = () => {
   
   const userFirstName = getUserFirstName()
 
-  // Load user activities
+  // Subscribe to user activities in real-time
   useEffect(() => {
-    const loadActivities = async () => {
-      if (user?.uid) {
-        try {
-          setLoading(true)
-          const userActivities = await activityService.getUserActivities(user.uid, 5)
-          setActivities(userActivities)
-        } catch (error) {
-          console.error('Error loading activities:', error)
-        } finally {
-          setLoading(false)
-        }
-      }
-    }
-
-    loadActivities()
+    if (!user?.uid) return
+    setLoading(true)
+    const unsubscribe = activityService.subscribeUserActivities(user.uid, 5, (latest) => {
+      setActivities(latest)
+      setLoading(false)
+    })
+    return unsubscribe
   }, [user])
 
   // Get icon for activity type

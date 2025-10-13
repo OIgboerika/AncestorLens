@@ -40,6 +40,7 @@ const FamilyTreeBuilderPage = () => {
   })
 
   const [relationships] = useState([
+    'Self',
     'Grandfather', 'Grandmother', 'Father', 'Mother', 'Brother', 'Sister',
     'Uncle', 'Aunt', 'Cousin', 'Son', 'Daughter', 'Grandson', 'Granddaughter',
     'Nephew', 'Niece', 'Husband', 'Partner', 'Other'

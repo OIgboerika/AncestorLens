@@ -29,6 +29,7 @@ export default function FamilyTreePage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [scale, setScale] = useState(1)
+  const [hideMock, setHideMock] = useState<boolean>(() => localStorage.getItem('hideMockFamily') === 'true')
   const [familyData, setFamilyData] = useState<{ grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }>({
     currentGeneration: [
       { id: 1, name: 'John Doe', role: 'Living', birthYear: '1980', location: 'Lagos, Nigeria', relationship: 'Self', hasChildren: true, hasParents: true, image: '' },
@@ -48,9 +49,8 @@ export default function FamilyTreePage() {
   })
   const navigate = useNavigate()
 
-  // Load family members from localStorage on component mount and when component becomes visible
-  useEffect(() => {
-    const loadFamilyMembers = () => {
+  // Helper to load family members respecting hideMock setting
+  const loadFamilyMembers = () => {
       const savedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
       console.log('Family Tree - Loaded saved members:', savedMembers)
       
@@ -73,42 +73,56 @@ export default function FamilyTreePage() {
         ],
       }
       
-      // Merge saved members with mock members, avoiding duplicates
-      const mergedData = {
-        currentGeneration: [
-          ...mockMembers.currentGeneration, 
-          ...savedMembers.filter((m: FamilyMember) => 
-            ['Self', 'Husband', 'Partner'].includes(m.relationship) && 
-            !mockMembers.currentGeneration.some(existing => existing.id === m.id)
-          )
-        ],
-        parents: [
-          ...mockMembers.parents, 
-          ...savedMembers.filter((m: FamilyMember) => 
-            ['Father', 'Mother'].includes(m.relationship) && 
-            !mockMembers.parents.some(existing => existing.id === m.id)
-          )
-        ],
-        grandparents: [
-          ...mockMembers.grandparents, 
-          ...savedMembers.filter((m: FamilyMember) => 
-            ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship) && 
-            !mockMembers.grandparents.some(existing => existing.id === m.id)
-          )
-        ],
-        children: [
-          ...mockMembers.children, 
-          ...savedMembers.filter((m: FamilyMember) => 
-            ['Son', 'Daughter', 'Grandson', 'Granddaughter'].includes(m.relationship) && 
-            !mockMembers.children.some(existing => existing.id === m.id)
-          )
-        ],
+      let mergedData: { grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }
+      
+      if (hideMock) {
+        // Use only saved members, grouped by relationship
+        mergedData = {
+          currentGeneration: savedMembers.filter((m: FamilyMember) => ['Self', 'Husband', 'Partner'].includes(m.relationship)),
+          parents: savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship)),
+          grandparents: savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship)),
+          children: savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter', 'Grandson', 'Granddaughter'].includes(m.relationship)),
+        }
+      } else {
+        // Merge saved members with mock members, avoiding duplicates
+        mergedData = {
+          currentGeneration: [
+            ...mockMembers.currentGeneration, 
+            ...savedMembers.filter((m: FamilyMember) => 
+              ['Self', 'Husband', 'Partner'].includes(m.relationship) && 
+              !mockMembers.currentGeneration.some(existing => existing.id === m.id)
+            )
+          ],
+          parents: [
+            ...mockMembers.parents, 
+            ...savedMembers.filter((m: FamilyMember) => 
+              ['Father', 'Mother'].includes(m.relationship) && 
+              !mockMembers.parents.some(existing => existing.id === m.id)
+            )
+          ],
+          grandparents: [
+            ...mockMembers.grandparents, 
+            ...savedMembers.filter((m: FamilyMember) => 
+              ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship) && 
+              !mockMembers.grandparents.some(existing => existing.id === m.id)
+            )
+          ],
+          children: [
+            ...mockMembers.children, 
+            ...savedMembers.filter((m: FamilyMember) => 
+              ['Son', 'Daughter', 'Grandson', 'Granddaughter'].includes(m.relationship) && 
+              !mockMembers.children.some(existing => existing.id === m.id)
+            )
+          ],
+        }
       }
       
       console.log('Family Tree - Merged data:', mergedData)
       setFamilyData(mergedData)
-    }
-    
+  }
+
+  // Load family members from localStorage on component mount and when component becomes visible
+  useEffect(() => {
     loadFamilyMembers()
     
     // Listen for storage changes (when new members are added)
@@ -133,7 +147,7 @@ export default function FamilyTreePage() {
       window.removeEventListener('storage', handleStorageChange)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [])
+  }, [hideMock])
 
   const familyStats = useMemo(() => ({
     totalMembers: familyData.grandparents.length + familyData.parents.length + familyData.currentGeneration.length + familyData.children.length,
@@ -186,6 +200,27 @@ export default function FamilyTreePage() {
             <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s - 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomOut className="w-4 h-4" /></Button>
             <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s + 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomIn className="w-4 h-4" /></Button>
           </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            const next = !hideMock
+            setHideMock(next)
+            localStorage.setItem('hideMockFamily', String(next))
+          }}
+        >
+          {hideMock ? 'Show Mock Data' : 'Hide Mock Data'}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (confirm('This will clear all your added family members. Continue?')) {
+              localStorage.removeItem('familyMembers')
+              loadFamilyMembers()
+            }
+          }}
+        >
+          Reset Tree
+        </Button>
           <Link to="/family-tree/builder">
             <Button className="flex items-center space-x-2">
               <Plus className="w-4 h-4" />
