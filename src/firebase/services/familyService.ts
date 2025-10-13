@@ -1,5 +1,5 @@
 import { firestoreService, convertTimestamps } from './firestore'
-import { where, orderBy } from 'firebase/firestore'
+import { where } from 'firebase/firestore'
 
 export interface FamilyMember {
   id?: string
@@ -37,8 +37,7 @@ export const familyService = {
   getFamilyMembers: async (userId: string): Promise<FamilyMember[]> => {
     try {
       const members = await firestoreService.getDocs('familyMembers', [
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
       ])
       return members.map(convertTimestamps) as FamilyMember[]
     } catch (error) {
@@ -100,8 +99,7 @@ export const familyService = {
         .map(convertTimestamps) as FamilyMember[]
       callback(members)
     }, [
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     ])
   },
 }

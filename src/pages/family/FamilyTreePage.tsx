@@ -11,9 +11,11 @@ import {
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
+import { useAuth } from '../../contexts/AuthContext'
+import { familyService } from '../../firebase/services/familyService'
 
 interface FamilyMember {
-  id: number
+  id: number | string
   name: string
   role: 'Living' | 'Deceased'
   birthYear?: string
@@ -26,26 +28,16 @@ interface FamilyMember {
 }
 
 export default function FamilyTreePage() {
+  const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [scale, setScale] = useState(1)
-  const [hideMock, setHideMock] = useState<boolean>(() => localStorage.getItem('hideMockFamily') === 'true')
+  const [hideMock, setHideMock] = useState<boolean>(true)
   const [familyData, setFamilyData] = useState<{ grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }>({
-    currentGeneration: [
-      { id: 1, name: 'John Doe', role: 'Living', birthYear: '1980', location: 'Lagos, Nigeria', relationship: 'Self', hasChildren: true, hasParents: true, image: '' },
-    ],
-    parents: [
-      { id: 2, name: 'Michael Doe', role: 'Deceased', birthYear: '1955', deathYear: '2020', location: 'Enugu, Nigeria', relationship: 'Father', hasChildren: true, hasParents: false, image: '' },
-      { id: 3, name: 'Grace Doe', role: 'Living', birthYear: '1960', location: 'Enugu, Nigeria', relationship: 'Mother', hasChildren: true, hasParents: false, image: '' },
-    ],
-    grandparents: [
-      { id: 4, name: 'Samuel Doe', role: 'Deceased', birthYear: '1925', deathYear: '1995', location: 'Abuja, Nigeria', relationship: 'Paternal Grandfather', hasChildren: true, hasParents: false, image: '' },
-      { id: 5, name: 'Mary Doe', role: 'Deceased', birthYear: '1930', deathYear: '2000', location: 'Abuja, Nigeria', relationship: 'Paternal Grandmother', hasChildren: true, hasParents: false, image: '' },
-    ],
-    children: [
-      { id: 6, name: 'David Doe', role: 'Living', birthYear: '2005', location: 'Lagos, Nigeria', relationship: 'Son', hasChildren: false, hasParents: true, image: '' },
-      { id: 7, name: 'Sarah Doe', role: 'Living', birthYear: '2008', location: 'Lagos, Nigeria', relationship: 'Daughter', hasChildren: false, hasParents: true, image: '' },
-    ],
+    currentGeneration: [],
+    parents: [],
+    grandparents: [],
+    children: [],
   })
   const navigate = useNavigate()
 
@@ -54,100 +46,63 @@ export default function FamilyTreePage() {
       const savedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
       console.log('Family Tree - Loaded saved members:', savedMembers)
       
-      // Get existing mock members
-      const mockMembers = {
-        currentGeneration: [
-          { id: 1, name: 'John Doe', role: 'Living' as const, birthYear: '1980', location: 'Lagos, Nigeria', relationship: 'Self', hasChildren: true, hasParents: true, image: '' },
-        ],
-        parents: [
-          { id: 2, name: 'Michael Doe', role: 'Deceased' as const, birthYear: '1955', deathYear: '2020', location: 'Enugu, Nigeria', relationship: 'Father', hasChildren: true, hasParents: false, image: '' },
-          { id: 3, name: 'Grace Doe', role: 'Living' as const, birthYear: '1960', location: 'Enugu, Nigeria', relationship: 'Mother', hasChildren: true, hasParents: false, image: '' },
-        ],
-        grandparents: [
-          { id: 4, name: 'Samuel Doe', role: 'Deceased' as const, birthYear: '1925', deathYear: '1995', location: 'Abuja, Nigeria', relationship: 'Paternal Grandfather', hasChildren: true, hasParents: false, image: '' },
-          { id: 5, name: 'Mary Doe', role: 'Deceased' as const, birthYear: '1930', deathYear: '2000', location: 'Abuja, Nigeria', relationship: 'Paternal Grandmother', hasChildren: true, hasParents: false, image: '' },
-        ],
-        children: [
-          { id: 6, name: 'David Doe', role: 'Living' as const, birthYear: '2005', location: 'Lagos, Nigeria', relationship: 'Son', hasChildren: false, hasParents: true, image: '' },
-          { id: 7, name: 'Sarah Doe', role: 'Living' as const, birthYear: '2008', location: 'Lagos, Nigeria', relationship: 'Daughter', hasChildren: false, hasParents: true, image: '' },
-        ],
-      }
-      
-      let mergedData: { grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }
-      
-      if (hideMock) {
-        // Use only saved members, grouped by relationship
-        mergedData = {
-          currentGeneration: savedMembers.filter((m: FamilyMember) => ['Self', 'Husband', 'Partner'].includes(m.relationship)),
-          parents: savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship)),
-          grandparents: savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship)),
-          children: savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter', 'Grandson', 'Granddaughter'].includes(m.relationship)),
-        }
-      } else {
-        // Merge saved members with mock members, avoiding duplicates
-        mergedData = {
-          currentGeneration: [
-            ...mockMembers.currentGeneration, 
-            ...savedMembers.filter((m: FamilyMember) => 
-              ['Self', 'Husband', 'Partner'].includes(m.relationship) && 
-              !mockMembers.currentGeneration.some(existing => existing.id === m.id)
-            )
-          ],
-          parents: [
-            ...mockMembers.parents, 
-            ...savedMembers.filter((m: FamilyMember) => 
-              ['Father', 'Mother'].includes(m.relationship) && 
-              !mockMembers.parents.some(existing => existing.id === m.id)
-            )
-          ],
-          grandparents: [
-            ...mockMembers.grandparents, 
-            ...savedMembers.filter((m: FamilyMember) => 
-              ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship) && 
-              !mockMembers.grandparents.some(existing => existing.id === m.id)
-            )
-          ],
-          children: [
-            ...mockMembers.children, 
-            ...savedMembers.filter((m: FamilyMember) => 
-              ['Son', 'Daughter', 'Grandson', 'Granddaughter'].includes(m.relationship) && 
-              !mockMembers.children.some(existing => existing.id === m.id)
-            )
-          ],
-        }
+      // Build tree strictly from user-saved members only (no mocks)
+      const mergedData: { grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] } = {
+        currentGeneration: savedMembers.filter((m: FamilyMember) => ['Self', 'Husband', 'Partner', 'Wife', 'Spouse', 'Brother', 'Sister'].includes(m.relationship)),
+        parents: savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship)),
+        grandparents: savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship)),
+        children: savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter', 'Child', 'Grandson', 'Granddaughter'].includes(m.relationship)),
       }
       
       console.log('Family Tree - Merged data:', mergedData)
+      // Sort current generation so that Self is first, then siblings, then partners/spouses
+      const sortOrder = (rel: string) => {
+        if (rel === 'Self') return 0
+        if (['Brother', 'Sister'].includes(rel)) return 1
+        if (['Husband', 'Wife', 'Spouse', 'Partner'].includes(rel)) return 2
+        return 3
+      }
+      mergedData.currentGeneration = [...mergedData.currentGeneration].sort((a, b) => sortOrder(a.relationship) - sortOrder(b.relationship))
       setFamilyData(mergedData)
   }
 
-  // Load family members from localStorage on component mount and when component becomes visible
+  // Load members: Firestore realtime when signed-in, else localStorage
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined
+    // Always load whatever is in local cache first for instant render
     loadFamilyMembers()
-    
+    if (user?.uid) {
+      unsubscribe = familyService.onFamilyMembersChange(user.uid, async (members) => {
+        try {
+          if (members && members.length > 0) {
+            // Reflect server state into local cache for persistence between refreshes
+            localStorage.setItem('familyMembers', JSON.stringify(members))
+          }
+        } catch {}
+        loadFamilyMembers()
+      })
+    } else {
+      loadFamilyMembers()
+    }
+
     // Listen for storage changes (when new members are added)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'familyMembers') {
         loadFamilyMembers()
       }
     }
-    
     window.addEventListener('storage', handleStorageChange)
-    
+
     // Also refresh when the page becomes visible (user navigates back)
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        loadFamilyMembers()
-      }
-    }
-    
+    const handleVisibilityChange = () => { if (!document.hidden) loadFamilyMembers() }
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    
+
     return () => {
+      if (unsubscribe) unsubscribe()
       window.removeEventListener('storage', handleStorageChange)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [hideMock])
+  }, [hideMock, user])
 
   const familyStats = useMemo(() => ({
     totalMembers: familyData.grandparents.length + familyData.parents.length + familyData.currentGeneration.length + familyData.children.length,
@@ -200,27 +155,7 @@ export default function FamilyTreePage() {
             <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s - 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomOut className="w-4 h-4" /></Button>
             <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s + 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomIn className="w-4 h-4" /></Button>
           </div>
-        <Button
-          variant="outline"
-          onClick={() => {
-            const next = !hideMock
-            setHideMock(next)
-            localStorage.setItem('hideMockFamily', String(next))
-          }}
-        >
-          {hideMock ? 'Show Mock Data' : 'Hide Mock Data'}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (confirm('This will clear all your added family members. Continue?')) {
-              localStorage.removeItem('familyMembers')
-              loadFamilyMembers()
-            }
-          }}
-        >
-          Reset Tree
-        </Button>
+        {/* Reset Tree removed as per request */}
           <Link to="/family-tree/builder">
             <Button className="flex items-center space-x-2">
               <Plus className="w-4 h-4" />

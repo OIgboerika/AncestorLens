@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   ArrowLeft, 
@@ -15,6 +15,7 @@ import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import Input from '../../components/ui/Input/Input'
 import { useAuth } from '../../contexts/AuthContext'
+import { familyService } from '../../firebase/services/familyService'
 import { activityService } from '../../firebase/services/activityService'
 
 const FamilyTreeBuilderPage = () => {
@@ -45,6 +46,28 @@ const FamilyTreeBuilderPage = () => {
     'Uncle', 'Aunt', 'Cousin', 'Son', 'Daughter', 'Grandson', 'Granddaughter',
     'Nephew', 'Niece', 'Husband', 'Partner', 'Other'
   ])
+
+  // Dynamic parent options from saved members
+  const [parentOptions, setParentOptions] = useState<Array<{ id: string | number; name: string; role: string }>>([])
+
+  useEffect(() => {
+    const loadParents = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('familyMembers') || '[]') as any[]
+        const parents = (saved || []).filter(m => ['Father', 'Mother'].includes(m.relationship))
+        const options = parents.map(m => ({ id: m.id, name: m.name, role: m.relationship }))
+        setParentOptions(options)
+      } catch (e) {
+        setParentOptions([])
+      }
+    }
+    loadParents()
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'familyMembers') loadParents()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Heritage tags state
   const [tags, setTags] = useState<string[]>([])
@@ -81,7 +104,7 @@ const FamilyTreeBuilderPage = () => {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // Basic validation
@@ -93,7 +116,7 @@ const FamilyTreeBuilderPage = () => {
     const payload = { 
       ...formData, 
       heritageTags: tags,
-      id: Date.now(), // Generate unique ID
+      id: Date.now(), // temporary; may be replaced by Firestore id
       name: `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`.trim(),
       role: formData.deathDate ? 'Deceased' : 'Living',
       birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
@@ -102,7 +125,53 @@ const FamilyTreeBuilderPage = () => {
       image: formData.profileImage ? URL.createObjectURL(formData.profileImage) : undefined
     }
     
-    // Store in localStorage for now (will be replaced with Firebase later)
+    // Persist to Firestore when signed in
+    try {
+      if (user?.uid) {
+        // If an image file exists, save a data URL for now (Storage integration can replace later)
+        let imageDataUrl: string | undefined = undefined
+        if (formData.profileImage) {
+          const reader = new FileReader()
+          imageDataUrl = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(formData.profileImage as File)
+          })
+        }
+        const firestoreId = await familyService.addFamilyMember(user.uid, {
+          name: payload.name,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          middleName: formData.middleName || undefined,
+          role: payload.role,
+          birthYear: payload.birthYear || undefined,
+          deathYear: payload.deathYear || undefined,
+          birthDate: formData.birthDate || undefined,
+          deathDate: formData.deathDate || undefined,
+          birthPlace: formData.birthPlace || undefined,
+          deathPlace: formData.deathPlace || undefined,
+          location: payload.location || undefined,
+          relationship: formData.relationship,
+          gender: formData.gender || undefined,
+          occupation: formData.occupation || undefined,
+          email: formData.email || undefined,
+          phone: formData.phone || undefined,
+          address: formData.address || undefined,
+          bio: formData.bio || undefined,
+          image: imageDataUrl,
+          heritageTags: tags,
+          parentId: formData.parentId || undefined,
+          hasChildren: undefined,
+          hasParents: undefined,
+        })
+        payload.id = firestoreId // replace temp id with Firestore id for cross-link
+        if (imageDataUrl) payload.image = imageDataUrl
+      }
+    } catch (err) {
+      console.error('Failed to save to Firestore, falling back to localStorage', err)
+    }
+
+    // Store in localStorage as local cache
     const existingMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
     existingMembers.push(payload)
     localStorage.setItem('familyMembers', JSON.stringify(existingMembers))
@@ -386,8 +455,9 @@ const FamilyTreeBuilderPage = () => {
                 className="input-field"
               >
                 <option value="">Select parent</option>
-                <option value="father">Michael Doe (Father)</option>
-                <option value="mother">Grace Doe (Mother)</option>
+                {parentOptions.map(p => (
+                  <option key={p.id} value={String(p.id)}>{p.name} ({p.role})</option>
+                ))}
               </select>
             </div>
           </div>

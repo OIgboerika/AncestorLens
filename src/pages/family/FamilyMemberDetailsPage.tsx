@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
+import { useAuth } from '../../contexts/AuthContext'
+import { familyService } from '../../firebase/services/familyService'
 
 interface MemberDetails {
   id: number
@@ -63,6 +65,7 @@ const FamilyMemberDetailsPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation() as { state?: { member?: MemberDetails } }
+  const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [memberData, setMemberData] = useState<MemberDetails>(MOCK_MEMBER)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -114,19 +117,52 @@ const FamilyMemberDetailsPage = () => {
     }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      const all: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
-      const idx = all.findIndex(m => Number(m.id) === Number(memberData.id))
-      if (idx !== -1) {
-        all[idx] = { ...all[idx], ...memberData }
-        localStorage.setItem('familyMembers', JSON.stringify(all))
+      // Update Firestore if we have an id string (Firestore doc id pattern)
+      if (typeof memberData.id === 'string') {
+        await familyService.updateFamilyMember(memberData.id, {
+          name: memberData.name,
+          role: memberData.role,
+          birthYear: memberData.birthYear,
+          deathYear: memberData.deathYear,
+          birthPlace: memberData.birthPlace,
+          deathPlace: memberData.deathPlace,
+          occupation: memberData.occupation,
+          email: memberData.email,
+          phone: memberData.phone,
+          address: memberData.address,
+          bio: memberData.bio,
+          image: memberData.image || memberData.profileImage || undefined,
+          heritageTags: memberData.heritageTags || [],
+        })
       }
+      const all: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+      const idx = all.findIndex(m => String(m.id) === String(memberData.id))
+      if (idx !== -1) { all[idx] = { ...all[idx], ...memberData } }
+      localStorage.setItem('familyMembers', JSON.stringify(all))
     } catch (err) {
       console.error('Failed to persist member', err)
     }
     setIsEditing(false)
     console.log('Updated member data:', memberData)
+  }
+
+  const handleDelete = async () => {
+    if (!memberData?.id) return
+    if (!confirm('Remove this family member from your tree? This action cannot be undone.')) return
+    try {
+      if (typeof memberData.id === 'string') {
+        await familyService.deleteFamilyMember(memberData.id)
+      }
+      const all: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+      const updated = all.filter(m => String(m.id) !== String(memberData.id))
+      localStorage.setItem('familyMembers', JSON.stringify(updated))
+      navigate('/family-tree')
+    } catch (err) {
+      console.error('Failed to delete member', err)
+      alert('Failed to delete member')
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -173,6 +209,13 @@ const FamilyMemberDetailsPage = () => {
               <Edit className="w-4 h-4" />
               <span>Edit</span>
             </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleDelete}
+            className="flex items-center space-x-2 border-red-200 text-red-600 hover:bg-red-50"
+          >
+            <span>Remove</span>
+          </Button>
             <Button className="flex items-center space-x-2">
               <Share2 className="w-4 h-4" />
               <span>Share</span>

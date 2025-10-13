@@ -1,5 +1,5 @@
 import { db } from '../config'
-import { collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp, onSnapshot } from 'firebase/firestore'
+import { collection, addDoc, getDocs, query, where, limit, Timestamp, onSnapshot } from 'firebase/firestore'
 
 export interface Activity {
   id?: string
@@ -38,7 +38,6 @@ export const activityService = {
       const q = query(
         collection(db, ACTIVITIES_COLLECTION),
         where('userId', '==', userId),
-        orderBy('timestamp', 'desc'),
         limit(limitCount)
       )
       
@@ -68,7 +67,6 @@ export const activityService = {
     const q = query(
       collection(db, ACTIVITIES_COLLECTION),
       where('userId', '==', userId),
-      orderBy('timestamp', 'desc'),
       limit(limitCount)
     )
     return onSnapshot(q, (snapshot) => {
