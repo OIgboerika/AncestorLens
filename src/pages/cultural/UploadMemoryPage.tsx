@@ -5,6 +5,9 @@ import Button from '../../components/ui/Button/Button'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { activityService } from '../../firebase/services/activityService'
+import { culturalMemoryService } from '../../firebase/services/culturalMemoryService'
+import { storage } from '../../firebase/config'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export default function UploadMemoryPage() {
   const navigate = useNavigate()
@@ -23,6 +26,7 @@ export default function UploadMemoryPage() {
     tags: ''
   })
   const fileRef = useRef<HTMLInputElement>(null)
+  const [saving, setSaving] = useState(false)
 
   const startRecording = () => setIsRecording(true)
   const stopRecording = () => setIsRecording(false)
@@ -40,8 +44,9 @@ export default function UploadMemoryPage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (saving) return
     
     if (!formData.title || !formData.category) {
       alert('Please fill in Title and Category')
@@ -58,31 +63,108 @@ export default function UploadMemoryPage() {
       return
     }
 
-    const newMemory = {
-      id: Date.now(),
+    setSaving(true)
+    // Build memory payload and persist
+    let imagesData: string[] | undefined
+    let imageUrl: string | undefined
+    let audioUrl: string | undefined
+    // If signed in, upload to Firebase Storage and use download URLs
+    if (user?.uid) {
+      const folderId = `${Date.now()}`
+      if (mediaType === 'image' && imageFiles.length > 0) {
+        const uploads = await Promise.all(imageFiles.map(async (file, idx) => {
+          const objectRef = ref(storage, `users/${user.uid}/memories/${folderId}/images/${idx}-${file.name}`)
+          await uploadBytes(objectRef, file)
+          return await getDownloadURL(objectRef)
+        }))
+        imagesData = uploads
+        imageUrl = uploads[0]
+      }
+      if (mediaType === 'audio' && audioFile) {
+        const objectRef = ref(storage, `users/${user.uid}/memories/${folderId}/audio/${audioFile.name}`)
+        await uploadBytes(objectRef, audioFile)
+        audioUrl = await getDownloadURL(objectRef)
+      }
+    } else {
+      // Not signed in: fallback to data URLs so the UI still works
+      if (mediaType === 'image' && imageFiles.length > 0) {
+        const readers = imageFiles.map((f) => new Promise<string>((resolve, reject) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.onerror = reject
+          r.readAsDataURL(f)
+        }))
+        imagesData = await Promise.all(readers)
+        imageUrl = imagesData[0]
+      }
+      if (mediaType === 'audio' && audioFile) {
+        audioUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.onerror = reject
+          r.readAsDataURL(audioFile)
+        })
+      }
+    }
+
+    const tags = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+
+    const localId = Date.now()
+    const localMemory = {
+      id: localId,
       title: formData.title,
       description: formData.description,
-      uploadedBy: 'Current User',
+      uploadedBy: user?.displayName || 'You',
       uploadDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       location: formData.location || 'Unknown',
       category: formData.category,
       type: mediaType,
       duration: mediaType === 'audio' ? '00:00' : undefined,
-      imageUrl: mediaType === 'image' && imageFiles.length > 0 ? URL.createObjectURL(imageFiles[0]) : undefined,
-      images: mediaType === 'image' ? imageFiles.map(f => URL.createObjectURL(f)) : undefined,
-      tags: formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(t => t) : []
+      imageUrl,
+      images: imagesData,
+      audioUrl,
+      tags
     }
 
-    // Save to localStorage
-    const existingMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
-    existingMemories.push(newMemory)
-    localStorage.setItem('culturalMemories', JSON.stringify(existingMemories))
-
-    // Log activity
-    if (user?.uid) {
-      activityService.logMemoryUploaded(user.uid, newMemory.title, newMemory.id.toString(), mediaType)
+    // Persist to Firestore when signed in
+    try {
+      if (user?.uid) {
+        const memoryId = await culturalMemoryService.addCulturalMemory(user.uid, {
+          title: localMemory.title,
+          description: localMemory.description,
+          category: localMemory.category,
+          type: localMemory.type,
+          duration: localMemory.duration,
+          imageUrl: localMemory.imageUrl,
+          images: localMemory.images,
+          audioUrl: localMemory.audioUrl,
+          year: formData.year || undefined,
+          location: localMemory.location,
+          participants: formData.participants || undefined,
+          tags,
+          uploadedBy: user.displayName || 'You',
+          uploadDate: localMemory.uploadDate,
+        })
+        // Log activity
+        await activityService.logMemoryUploaded(user.uid, localMemory.title, memoryId, mediaType)
+        // Cache in localStorage for instant UX
+        const existing = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+        existing.push({ ...localMemory, id: memoryId })
+        localStorage.setItem('culturalMemories', JSON.stringify(existing))
+      } else {
+        // Not signed in: keep local only
+        const existing = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+        existing.push(localMemory)
+        localStorage.setItem('culturalMemories', JSON.stringify(existing))
+      }
+    } catch (err) {
+      console.error('Failed to save cultural memory:', err)
+      // Fallback to local-only so the user doesn't lose work
+      const existing = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+      existing.push(localMemory)
+      localStorage.setItem('culturalMemories', JSON.stringify(existing))
     }
-
+    setSaving(false)
     alert('Memory uploaded successfully!')
     navigate('/cultural-memories')
   }
@@ -227,7 +309,9 @@ export default function UploadMemoryPage() {
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="outline" onClick={() => navigate('/cultural-memories')}>Cancel</Button>
-          <Button type="submit" className="flex items-center gap-2"><Save className="w-4 h-4" /> Save Memory</Button>
+          <Button type="submit" className="flex items-center gap-2" disabled={saving}>
+            <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Memory'}
+          </Button>
         </div>
       </form>
     </div>

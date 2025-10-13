@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { Plus, Search, Filter, Play, Calendar, User, MapPin, MoreHorizontal, SlidersHorizontal, Image as ImageIcon, Headphones } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
+import { useAuth } from '../../contexts/AuthContext'
+import { culturalMemoryService } from '../../firebase/services/culturalMemoryService'
 
 type MediaType = 'audio' | 'image'
 
 interface MemoryItem {
-  id: number
+  id: string | number
   title: string
   description: string
   uploadedBy: string
@@ -18,30 +20,41 @@ interface MemoryItem {
   duration?: string
   imageUrl?: string
   images?: string[]
+  audioUrl?: string
   tags: string[]
 }
-
-const MOCK: MemoryItem[] = [
-  { id: 1, title: 'The Naming Ceremony', description: 'Grandmother recounts a traditional naming rite in Enugu.', duration: '12:45', uploadedBy: 'Ada Obi', uploadDate: 'Jan 12, 2024', location: 'Enugu, Nigeria', category: 'Ceremony', type: 'audio', tags: ['Naming', 'Tradition'] },
-  { id: 2, title: 'Market Days', description: 'Photos from the old market square and communal gatherings.', uploadedBy: 'Sola Ade', uploadDate: 'Dec 29, 2023', location: 'Ibadan, Nigeria', category: 'Daily Life', type: 'image', imageUrl: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=1200&auto=format&fit=crop', images: ['https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=1200&auto=format&fit=crop','https://images.unsplash.com/photo-1558980664-10e7170b5c78?q=80&w=1200&auto=format&fit=crop','https://images.unsplash.com/photo-1527152832251-5d0cc97b38b7?q=80&w=1200&auto=format&fit=crop'], tags: ['Market', 'Community'] },
-  { id: 3, title: 'Migration West', description: 'Father shares the 80s migration journey across states.', duration: '18:03', uploadedBy: 'Chinedu N.', uploadDate: 'Nov 3, 2023', location: 'Lagos, Nigeria', category: 'Migration', type: 'audio', tags: ['Journey'] },
-  { id: 4, title: 'Wedding Portrait 1978', description: 'Family wedding photo highlighting traditional attire.', uploadedBy: 'Ngozi U.', uploadDate: 'Oct 7, 2023', location: 'Enugu, Nigeria', category: 'Ceremony', type: 'image', imageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop', images: ['https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop','https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1200&auto=format&fit=crop'], tags: ['Wedding', 'Attire'] },
-]
+ 
 
 export default function CulturalMemoriesPage() {
+  const { user } = useAuth()
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string | null>(null)
-  const [memories, setMemories] = useState<MemoryItem[]>(MOCK)
+  const [memories, setMemories] = useState<MemoryItem[]>([])
 
   const categories = ['All', 'Ceremony', 'Daily Life', 'Migration', 'Folklore', 'Food', 'Music']
 
-  // Load saved memories from localStorage
+  // Load realtime from Firestore if signed in; otherwise fall back to localStorage
   useEffect(() => {
-    const savedMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
-    if (savedMemories.length > 0) {
-      setMemories([...MOCK, ...savedMemories])
+    let unsubscribe: (() => void) | undefined
+    const loadLocal = () => {
+      const saved = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+      setMemories(saved)
     }
-  }, [])
+    if (user?.uid) {
+      unsubscribe = culturalMemoryService.onCulturalMemoriesChange(user.uid, (docs) => {
+        try { localStorage.setItem('culturalMemories', JSON.stringify(docs)) } catch {}
+        if (docs && docs.length > 0) {
+          setMemories(docs as any)
+        } else {
+          const saved = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+          setMemories(saved)
+        }
+      })
+    } else {
+      loadLocal()
+    }
+    return () => { if (unsubscribe) unsubscribe() }
+  }, [user])
 
   const filtered = memories.filter(m =>
     (category && category !== 'All' ? m.category === category : true) &&

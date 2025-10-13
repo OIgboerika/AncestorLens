@@ -1,8 +1,11 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Play, Pause, Share2, Download, Calendar, Clock, User, MapPin, Volume2, Image as ImageIcon } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import { useMemo, useState } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { culturalMemoryService } from '../../firebase/services/culturalMemoryService'
+import React from 'react'
 
 type MediaType = 'audio' | 'image'
 
@@ -25,8 +28,20 @@ interface MemoryItem {
 export default function CulturalMemoryDetailsPage() {
   const navigate = useNavigate()
   const { state } = useLocation() as { state?: { memory?: MemoryItem } }
+  const { id } = useParams()
+  const { user } = useAuth()
   const [playing, setPlaying] = useState(false)
-  const memory = state?.memory as MemoryItem | undefined
+  const memoryFromState = state?.memory as MemoryItem | undefined
+  const [memory, setMemory] = useState<MemoryItem | undefined>(memoryFromState)
+
+  // Load from Firestore if navigated directly
+  React.useEffect(() => {
+    if (!memoryFromState && user?.uid && id) {
+      culturalMemoryService.getCulturalMemory(id).then(doc => {
+        if (doc) setMemory(doc as any)
+      }).catch(() => {})
+    }
+  }, [id, user, memoryFromState])
 
   // Gallery state for images
   const images = useMemo(() => memory?.images || (memory?.imageUrl ? [memory.imageUrl] : []), [memory])

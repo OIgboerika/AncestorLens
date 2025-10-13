@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate, Link } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Layout from './components/Layout/Layout'
 import DashboardPage from './pages/DashboardPage'
@@ -36,7 +35,6 @@ function Home() {
 
 export default function App() {
   return (
-    <AuthProvider>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
@@ -58,6 +56,5 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </AuthProvider>
   )
 }

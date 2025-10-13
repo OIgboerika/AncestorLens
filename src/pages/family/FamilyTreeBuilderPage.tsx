@@ -143,7 +143,7 @@ const FamilyTreeBuilderPage = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           middleName: formData.middleName || undefined,
-          role: payload.role,
+          role: formData.deathDate ? 'Deceased' : 'Living',
           birthYear: payload.birthYear || undefined,
           deathYear: payload.deathYear || undefined,
           birthDate: formData.birthDate || undefined,
@@ -164,7 +164,7 @@ const FamilyTreeBuilderPage = () => {
           hasChildren: undefined,
           hasParents: undefined,
         })
-        payload.id = firestoreId // replace temp id with Firestore id for cross-link
+        payload.id = Number(firestoreId) // convert string id to number
         if (imageDataUrl) payload.image = imageDataUrl
       }
     } catch (err) {

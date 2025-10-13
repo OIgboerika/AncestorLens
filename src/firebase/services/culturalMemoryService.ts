@@ -1,5 +1,5 @@
 import { firestoreService, convertTimestamps } from './firestore'
-import { where, orderBy } from 'firebase/firestore'
+import { where } from 'firebase/firestore'
 
 export interface CulturalMemory {
   id?: string
@@ -27,8 +27,7 @@ export const culturalMemoryService = {
   getCulturalMemories: async (userId: string): Promise<CulturalMemory[]> => {
     try {
       const memories = await firestoreService.getDocs('culturalMemories', [
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
       ])
       return memories.map(convertTimestamps) as CulturalMemory[]
     } catch (error) {
@@ -51,15 +50,20 @@ export const culturalMemoryService = {
   // Add a new cultural memory
   addCulturalMemory: async (userId: string, memoryData: Omit<CulturalMemory, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     try {
-      const memoryId = await firestoreService.addDoc('culturalMemories', {
+      // Firestore does not allow undefined values; strip them out
+      const payload: any = {
         ...memoryData,
         userId,
-        uploadDate: new Date().toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric' 
+        uploadDate: new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
         }),
+      }
+      Object.keys(payload).forEach((k) => {
+        if (payload[k] === undefined) delete payload[k]
       })
+      const memoryId = await firestoreService.addDoc('culturalMemories', payload)
       return memoryId
     } catch (error) {
       console.error('Error adding cultural memory:', error)
@@ -92,8 +96,7 @@ export const culturalMemoryService = {
     try {
       const memories = await firestoreService.getDocs('culturalMemories', [
         where('userId', '==', userId),
-        where('category', '==', category),
-        orderBy('createdAt', 'desc')
+        where('category', '==', category)
       ])
       return memories.map(convertTimestamps) as CulturalMemory[]
     } catch (error) {
@@ -110,8 +113,7 @@ export const culturalMemoryService = {
         .map(convertTimestamps) as CulturalMemory[]
       callback(memories)
     }, [
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     ])
   },
 }

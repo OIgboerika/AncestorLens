@@ -60,10 +60,12 @@ export const familyService = {
   // Add a new family member
   addFamilyMember: async (userId: string, memberData: Omit<FamilyMember, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     try {
-      const memberId = await firestoreService.addDoc('familyMembers', {
-        ...memberData,
-        userId,
+      // Strip undefined values – Firestore rejects undefined
+      const payload: any = { ...memberData, userId }
+      Object.keys(payload).forEach((k) => {
+        if (payload[k] === undefined) delete payload[k]
       })
+      const memberId = await firestoreService.addDoc('familyMembers', payload)
       return memberId
     } catch (error) {
       console.error('Error adding family member:', error)

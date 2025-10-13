@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCc0F0_sbhmKnZKpADyTNxunicPSPuL0w8",
   authDomain: "ancestorlens.firebaseapp.com",
   projectId: "ancestorlens",
-  storageBucket: "ancestorlens.firebasestorage.app",
+  storageBucket: "ancestorlens.appspot.com",
   messagingSenderId: "94900313233",
   appId: "1:94900313233:web:9800fdf080ea354d1e3330",
   measurementId: "G-YFZTMQD8EK"
@@ -28,7 +28,7 @@ console.log('Firebase Config Debug:', {
 const app = initializeApp(firebaseConfig)
 const auth = getAuth(app)
 const db = getFirestore(app)
-const storage = getStorage(app)
+const storage = getStorage(app, 'gs://ancestorlens.appspot.com')
 
 console.log('Firebase initialized successfully')
 
