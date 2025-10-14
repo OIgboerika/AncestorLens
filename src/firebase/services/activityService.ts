@@ -78,6 +78,28 @@ export const activityService = {
     })
   },
 
+  // Listen to real-time activity updates for a user
+  onActivitiesChange: (userId: string, callback: (activities: Activity[]) => void, limitCount: number = 5) => {
+    const q = query(
+      collection(db, ACTIVITIES_COLLECTION),
+      where('userId', '==', userId),
+      limit(limitCount)
+    )
+
+    return onSnapshot(q, (snapshot) => {
+      const activities: Activity[] = []
+      snapshot.forEach((doc) => {
+        activities.push({
+          id: doc.id,
+          ...doc.data()
+        } as Activity)
+      })
+      callback(activities)
+    }, (error) => {
+      console.error('Error listening to activities:', error)
+    })
+  },
+
   // Helper functions for common activity types
   async logFamilyMemberAdded(userId: string, memberName: string, memberId: string): Promise<void> {
     await this.addActivity({

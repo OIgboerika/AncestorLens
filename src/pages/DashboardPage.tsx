@@ -42,13 +42,22 @@ const DashboardPage = () => {
 
   // Subscribe to user activities in real-time
   useEffect(() => {
-    if (!user?.uid) return
-    setLoading(true)
-    const unsubscribe = activityService.subscribeUserActivities(user.uid, 5, (latest) => {
-      setActivities(latest)
+    let unsubscribe: (() => void) | undefined
+    
+    if (user?.uid) {
+      setLoading(true)
+      unsubscribe = activityService.onActivitiesChange(user.uid, (latestActivities: Activity[]) => {
+        setActivities(latestActivities)
+        setLoading(false)
+      })
+    } else {
+      setActivities([])
       setLoading(false)
-    })
-    return unsubscribe
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe()
+    }
   }, [user])
 
   // Get icon for activity type
