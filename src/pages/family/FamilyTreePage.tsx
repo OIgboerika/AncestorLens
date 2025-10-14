@@ -7,7 +7,8 @@ import {
   Filter, 
   Calendar,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  UserPlus
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
@@ -22,6 +23,7 @@ interface FamilyMember {
   deathYear?: string
   location?: string
   relationship: string
+  parentId?: string | number
   hasChildren?: boolean
   hasParents?: boolean
   image?: string
@@ -41,28 +43,106 @@ export default function FamilyTreePage() {
   })
   const navigate = useNavigate()
 
+  // Helper to build family tree based on proper generational hierarchy
+  const buildFamilyTree = (members: FamilyMember[]) => {
+    if (members.length === 0) return { grandparents: [], parents: [], currentGeneration: [], children: [] }
+
+    // Find the root member (Self or first member without parentId)
+    const rootMember = members.find(m => m.relationship === 'Self') || members.find(m => !m.parentId) || members[0]
+    if (!rootMember) return { grandparents: [], parents: [], currentGeneration: [], children: [] }
+
+    // Build generations properly based on relationships
+    const grandparents: FamilyMember[] = []
+    const parents: FamilyMember[] = []
+    const currentGeneration: FamilyMember[] = []
+    const children: FamilyMember[] = []
+
+    // Categorize members by their relationship to the root
+    members.forEach(member => {
+      switch (member.relationship) {
+        case 'Grandfather':
+        case 'Grandmother':
+        case 'Paternal Grandfather':
+        case 'Paternal Grandmother':
+        case 'Maternal Grandfather':
+        case 'Maternal Grandmother':
+          grandparents.push(member)
+          break
+        
+        case 'Father':
+        case 'Mother':
+          parents.push(member)
+          break
+        
+        case 'Self':
+        case 'Brother':
+        case 'Sister':
+        case 'Husband':
+        case 'Wife':
+        case 'Spouse':
+        case 'Partner':
+          currentGeneration.push(member)
+          break
+        
+        case 'Son':
+        case 'Daughter':
+        case 'Child':
+        case 'Grandson':
+        case 'Granddaughter':
+          children.push(member)
+          break
+        
+        default:
+          // For other relationships, try to determine generation based on parentId
+          if (member.parentId) {
+            const parent = members.find(p => p.id === member.parentId)
+            if (parent) {
+              if (['Father', 'Mother'].includes(parent.relationship)) {
+                children.push(member)
+              } else if (['Self', 'Brother', 'Sister'].includes(parent.relationship)) {
+                children.push(member)
+              }
+            }
+          } else {
+            // If no parentId, assume it's in current generation
+            currentGeneration.push(member)
+          }
+      }
+    })
+
+    // Sort each generation appropriately
+    const sortGeneration = (gen: FamilyMember[]) => {
+      return gen.sort((a, b) => {
+        const sortOrder = (rel: string) => {
+          if (rel === 'Self') return 0
+          if (['Father', 'Mother'].includes(rel)) return 1
+          if (['Brother', 'Sister'].includes(rel)) return 2
+          if (['Husband', 'Wife', 'Spouse', 'Partner'].includes(rel)) return 3
+          if (['Son', 'Daughter', 'Child'].includes(rel)) return 4
+          return 5
+        }
+        return sortOrder(a.relationship) - sortOrder(b.relationship)
+      })
+    }
+
+    return {
+      grandparents: sortGeneration(grandparents),
+      parents: sortGeneration(parents),
+      currentGeneration: sortGeneration(currentGeneration),
+      children: sortGeneration(children)
+    }
+  }
+
   // Helper to load family members respecting hideMock setting
   const loadFamilyMembers = () => {
       const savedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
       console.log('Family Tree - Loaded saved members:', savedMembers)
       
-      // Build tree strictly from user-saved members only (no mocks)
-      const mergedData: { grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] } = {
-        currentGeneration: savedMembers.filter((m: FamilyMember) => ['Self', 'Husband', 'Partner', 'Wife', 'Spouse', 'Brother', 'Sister'].includes(m.relationship)),
-        parents: savedMembers.filter((m: FamilyMember) => ['Father', 'Mother'].includes(m.relationship)),
-        grandparents: savedMembers.filter((m: FamilyMember) => ['Paternal Grandfather', 'Paternal Grandmother', 'Maternal Grandfather', 'Maternal Grandmother', 'Grandfather', 'Grandmother'].includes(m.relationship)),
-        children: savedMembers.filter((m: FamilyMember) => ['Son', 'Daughter', 'Child', 'Grandson', 'Granddaughter'].includes(m.relationship)),
-      }
+      // Build tree based on proper generational hierarchy
+      const mergedData = buildFamilyTree(savedMembers)
       
       console.log('Family Tree - Merged data:', mergedData)
-      // Sort current generation so that Self is first, then siblings, then partners/spouses
-      const sortOrder = (rel: string) => {
-        if (rel === 'Self') return 0
-        if (['Brother', 'Sister'].includes(rel)) return 1
-        if (['Husband', 'Wife', 'Spouse', 'Partner'].includes(rel)) return 2
-        return 3
-      }
-      mergedData.currentGeneration = [...mergedData.currentGeneration].sort((a, b) => sortOrder(a.relationship) - sortOrder(b.relationship))
+      console.log('Family Tree - All members:', savedMembers.map((m: { name: any; relationship: any; parentId: any }) => ({ name: m.name, relationship: m.relationship, parentId: m.parentId })))
       setFamilyData(mergedData)
   }
 
@@ -104,12 +184,23 @@ export default function FamilyTreePage() {
     }
   }, [hideMock, user])
 
-  const familyStats = useMemo(() => ({
-    totalMembers: familyData.grandparents.length + familyData.parents.length + familyData.currentGeneration.length + familyData.children.length,
-    livingMembers: [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children].filter(m => m.role === 'Living').length,
-    deceasedMembers: [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children].filter(m => m.role === 'Deceased').length,
-    generations: 4,
-  }), [familyData])
+  const familyStats = useMemo(() => {
+    const allMembers = [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children]
+    
+    // Calculate actual number of generations based on which generations have members
+    let generations = 0
+    if (familyData.grandparents.length > 0) generations++
+    if (familyData.parents.length > 0) generations++
+    if (familyData.currentGeneration.length > 0) generations++
+    if (familyData.children.length > 0) generations++
+    
+    return {
+      totalMembers: allMembers.length,
+      livingMembers: allMembers.filter(m => m.role === 'Living').length,
+      deceasedMembers: allMembers.filter(m => m.role === 'Deceased').length,
+      generations: generations,
+    }
+  }, [familyData])
 
   const Node = ({ member }: { member: FamilyMember }) => {
     const initials = member.name.split(' ').map(n => n[0]).join('')
@@ -228,34 +319,42 @@ export default function FamilyTreePage() {
           <div className="relative min-w-[600px] sm:min-w-[800px] lg:min-w-[900px] py-10">
             {/* Zoomable content wrapper */}
             <div className="origin-center" style={{ transform: `scale(${scale})` }}>
-              {/* Grandparents row */}
-              <div className="flex justify-center gap-12 sm:gap-16 lg:gap-24 relative">
-                {familyData.grandparents.map((m) => (
-                  <div key={m.id} className="flex flex-col items-center">
-                    <Node member={m} />
+              {/* Dynamic tree rendering based on parent-child relationships */}
+              {familyData.grandparents.length > 0 && (
+                <>
+                  {/* Grandparents row */}
+                  <div className="flex justify-center gap-12 sm:gap-16 lg:gap-24 relative">
+                    {familyData.grandparents.map((m) => (
+                      <div key={m.id} className="flex flex-col items-center">
+                        <Node member={m} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              {/* straight connectors */}
-              <div className="flex justify-center items-center mt-2">
-                <div className="h-6 w-px bg-gray-400"></div>
-                <div className="mx-6 h-px w-56 bg-gray-400"></div>
-                <div className="h-6 w-px bg-gray-400"></div>
-              </div>
+                  {/* Connectors to parents */}
+                  <div className="flex justify-center items-center mt-2">
+                    <div className="h-6 w-px bg-gray-400"></div>
+                    <div className="mx-6 h-px w-56 bg-gray-400"></div>
+                    <div className="h-6 w-px bg-gray-400"></div>
+                  </div>
+                </>
+              )}
 
               {/* Parents row */}
-              <div className="mt-4 flex justify-center gap-24 sm:gap-32 lg:gap-48 relative">
-                {familyData.parents.map((m) => (
-                  <div key={m.id} className="flex flex-col items-center">
-                    <Node member={m} />
+              {familyData.parents.length > 0 && (
+                <>
+                  <div className="mt-4 flex justify-center gap-24 sm:gap-32 lg:gap-48 relative">
+                    {familyData.parents.map((m) => (
+                      <div key={m.id} className="flex flex-col items-center">
+                        <Node member={m} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              {/* connector to current */}
-              <div className="flex justify-center mt-2">
-                <div className="h-6 w-px bg-gray-400"></div>
-              </div>
+                  {/* Connector to current generation */}
+                  <div className="flex justify-center mt-2">
+                    <div className="h-6 w-px bg-gray-400"></div>
+                  </div>
+                </>
+              )}
 
               {/* Current generation */}
               <div className="mt-4 flex justify-center">
@@ -266,7 +365,7 @@ export default function FamilyTreePage() {
                 ))}
               </div>
 
-              {/* connectors to children */}
+              {/* Children row */}
               {familyData.children.length > 0 && (
                 <>
                   <div className="flex justify-center items-center mt-2">
@@ -282,6 +381,22 @@ export default function FamilyTreePage() {
                     ))}
                   </div>
                 </>
+              )}
+
+              {/* Show message if no family members */}
+              {familyData.grandparents.length === 0 && 
+               familyData.parents.length === 0 && 
+               familyData.currentGeneration.length === 0 && 
+               familyData.children.length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-600 mb-2">No Family Members Yet</h3>
+                  <p className="text-gray-500 mb-4">Start building your family tree by adding your first family member.</p>
+                  <Button onClick={() => navigate('/family-tree/builder')}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Add First Family Member
+                  </Button>
+                </div>
               )}
             </div>
           </div>

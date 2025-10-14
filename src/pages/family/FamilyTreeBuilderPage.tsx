@@ -49,14 +49,19 @@ const FamilyTreeBuilderPage = () => {
   ])
 
   // Dynamic parent options from saved members
-  const [parentOptions, setParentOptions] = useState<Array<{ id: string | number; name: string; role: string }>>([])
+  const [parentOptions, setParentOptions] = useState<Array<{ id: string | number; name: string; role: string; relationship: string }>>([])
 
   useEffect(() => {
     const loadParents = () => {
       try {
         const saved = JSON.parse(localStorage.getItem('familyMembers') || '[]') as any[]
-        const parents = (saved || []).filter(m => ['Father', 'Mother'].includes(m.relationship))
-        const options = parents.map(m => ({ id: m.id, name: m.name, role: m.relationship }))
+        // Load all existing family members as potential parents
+        const options = (saved || []).map(m => ({ 
+          id: m.id, 
+          name: m.name, 
+          role: m.relationship,
+          relationship: m.relationship 
+        }))
         setParentOptions(options)
       } catch (e) {
         setParentOptions([])
@@ -461,11 +466,19 @@ const FamilyTreeBuilderPage = () => {
                 onChange={handleInputChange}
                 className="input-field"
               >
-                <option value="">Select parent</option>
+                <option value="">Select parent (optional)</option>
                 {parentOptions.map(p => (
-                  <option key={p.id} value={String(p.id)}>{p.name} ({p.role})</option>
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name} ({p.relationship})
+                  </option>
                 ))}
               </select>
+              <p className="text-sm text-gray-500 mt-1">
+                {['Grandfather', 'Grandmother', 'Uncle', 'Aunt', 'Cousin', 'Nephew', 'Niece'].includes(formData.relationship) 
+                  ? 'Select the parent to establish the family connection'
+                  : 'Optional: Link this person to an existing family member'
+                }
+              </p>
             </div>
           </div>
         </Card>
