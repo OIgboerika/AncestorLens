@@ -6,8 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { activityService } from '../../firebase/services/activityService'
 import { culturalMemoryService } from '../../firebase/services/culturalMemoryService'
-import { storage } from '../../firebase/config'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { cloudinaryService } from '../../services/cloudinaryService'
 
 export default function UploadMemoryPage() {
   const navigate = useNavigate()
@@ -72,18 +71,18 @@ export default function UploadMemoryPage() {
     if (user?.uid) {
       const folderId = `${Date.now()}`
       if (mediaType === 'image' && imageFiles.length > 0) {
-        const uploads = await Promise.all(imageFiles.map(async (file, idx) => {
-          const objectRef = ref(storage, `users/${user.uid}/memories/${folderId}/images/${idx}-${file.name}`)
-          await uploadBytes(objectRef, file)
-          return await getDownloadURL(objectRef)
-        }))
-        imagesData = uploads
-        imageUrl = uploads[0]
+        // Upload to Cloudinary for better performance and optimization
+        imagesData = await cloudinaryService.uploadCulturalMemoryImages(imageFiles, folderId)
+        imageUrl = imagesData[0]
       }
       if (mediaType === 'audio' && audioFile) {
-        const objectRef = ref(storage, `users/${user.uid}/memories/${folderId}/audio/${audioFile.name}`)
-        await uploadBytes(objectRef, audioFile)
-        audioUrl = await getDownloadURL(objectRef)
+        // For audio files, we'll still use data URLs for now (Cloudinary supports audio but requires different handling)
+        audioUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.onerror = reject
+          r.readAsDataURL(audioFile)
+        })
       }
     } else {
       // Not signed in: fallback to data URLs so the UI still works

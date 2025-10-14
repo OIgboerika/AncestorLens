@@ -17,6 +17,7 @@ import Input from '../../components/ui/Input/Input'
 import { useAuth } from '../../contexts/AuthContext'
 import { familyService } from '../../firebase/services/familyService'
 import { activityService } from '../../firebase/services/activityService'
+import { cloudinaryService } from '../../services/cloudinaryService'
 
 const FamilyTreeBuilderPage = () => {
   const navigate = useNavigate()
@@ -126,16 +127,12 @@ const FamilyTreeBuilderPage = () => {
     }
     
     // Persist to Firestore when signed in
-    // Convert image to persistent data URL for local/Firestore persistence
-    let imageDataUrl: string | undefined = undefined
+    // Upload image to Cloudinary and get URL
+    let imageUrl: string | undefined = undefined
     try {
       if (formData.profileImage) {
-        imageDataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(formData.profileImage as File)
-        })
+        // Upload to Cloudinary for better performance and optimization
+        imageUrl = await cloudinaryService.uploadFamilyMemberPhoto(formData.profileImage, payload.id.toString())
       }
       if (user?.uid) {
         const firestoreId = await familyService.addFamilyMember(user.uid, {
@@ -158,22 +155,32 @@ const FamilyTreeBuilderPage = () => {
           phone: formData.phone || undefined,
           address: formData.address || undefined,
           bio: formData.bio || undefined,
-          image: imageDataUrl,
+          image: imageUrl,
           heritageTags: tags,
           parentId: formData.parentId || undefined,
           hasChildren: undefined,
           hasParents: undefined,
         })
         payload.id = Number(firestoreId)
-        if (imageDataUrl) payload.image = imageDataUrl
+        if (imageUrl) payload.image = imageUrl
       }
     } catch (err) {
       console.error('Failed to save to Firestore, falling back to localStorage', err)
+      // Fallback to data URL if Cloudinary fails
+      if (formData.profileImage && !imageUrl) {
+        imageUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(formData.profileImage as File)
+        })
+        payload.image = imageUrl
+      }
     }
 
     // Store in localStorage as local cache
     const existingMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
-    existingMembers.push({ ...payload, image: imageDataUrl || payload.image })
+    existingMembers.push({ ...payload, image: imageUrl || payload.image })
     localStorage.setItem('familyMembers', JSON.stringify(existingMembers))
     
     console.log('Family Tree Builder - Saved payload:', payload)

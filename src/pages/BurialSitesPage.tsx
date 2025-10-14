@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Search, MapPin, Calendar, Share2, Eye, X } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
-import GoogleMap from '../components/ui/GoogleMap/GoogleMap'
+import LeafletMap from '../components/maps/LeafletMap'
+import '../styles/leaflet.css'
 import { useAuth } from '../contexts/AuthContext'
 import { activityService } from '../firebase/services/activityService'
 
@@ -252,7 +253,7 @@ const BurialSitesPage = () => {
             <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-600 mb-2">Interactive Map</h3>
             <p className="text-gray-500 mb-4">
-              Google Maps integration will show burial site locations
+              Interactive map showing burial site locations
             </p>
             <Button variant="outline">
               Enable Map View
@@ -266,18 +267,17 @@ const BurialSitesPage = () => {
         <Card className="mb-8">
           <div className="p-4">
             <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Burial Sites Map</h3>
-            <GoogleMap
-              center={{ lat: 9.0765, lng: 7.3986 }} // Default to Abuja, Nigeria
+            <LeafletMap
+              center={[9.0765, 7.3986]} // Default to Abuja, Nigeria
               zoom={10}
               markers={sites.map(site => ({
                 id: site.id.toString(),
-                position: site.coordinates,
+                position: [site.coordinates.lat, site.coordinates.lng],
                 title: site.name,
-                info: `${site.deceasedName} (${site.birthYear || 'Unknown'} - ${site.deathYear || 'Unknown'})`
+                description: `${site.deceasedName} (${site.birthYear || 'Unknown'} - ${site.deathYear || 'Unknown'})`
               }))}
               onMarkerClick={handleMarkerClick}
               height="500px"
-              className="rounded-lg overflow-hidden"
             />
             {selectedSite && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -465,12 +465,11 @@ const BurialSitesPage = () => {
                     </div>
                   </div>
                   <div className="rounded-lg overflow-hidden border border-gray-200">
-                    <GoogleMap
-                      center={{ lat: newSite.coordinates?.lat || 9.0765, lng: newSite.coordinates?.lng || 7.3986 }}
+                    <LeafletMap
+                      center={[newSite.coordinates?.lat || 9.0765, newSite.coordinates?.lng || 7.3986]}
                       zoom={15}
                       onMapClick={handleMapClick}
                       height="300px"
-                      className="w-full"
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Click on the map to set coordinates</p>
