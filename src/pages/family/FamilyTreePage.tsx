@@ -43,21 +43,21 @@ export default function FamilyTreePage() {
   })
   const navigate = useNavigate()
 
-  // Helper to build family tree based on proper generational hierarchy
+  // Helper to build family tree based on proper generational hierarchy with parent-child connections
   const buildFamilyTree = (members: FamilyMember[]) => {
     if (members.length === 0) return { grandparents: [], parents: [], currentGeneration: [], children: [] }
 
-    // Find the root member (Self or first member without parentId)
-    const rootMember = members.find(m => m.relationship === 'Self') || members.find(m => !m.parentId) || members[0]
+    // Find the root member (Self)
+    const rootMember = members.find(m => m.relationship === 'Self')
     if (!rootMember) return { grandparents: [], parents: [], currentGeneration: [], children: [] }
 
-    // Build generations properly based on relationships
+    // Build generations properly based on relationships and parentId connections
     const grandparents: FamilyMember[] = []
-    const parents: FamilyMember[] = []
+    const parentsGeneration: FamilyMember[] = [] // Combined parents and their siblings (uncles/aunts)
     const currentGeneration: FamilyMember[] = []
     const children: FamilyMember[] = []
 
-    // Categorize members by their relationship to the root
+    // First, categorize by relationship type
     members.forEach(member => {
       switch (member.relationship) {
         case 'Grandfather':
@@ -71,7 +71,10 @@ export default function FamilyTreePage() {
         
         case 'Father':
         case 'Mother':
-          parents.push(member)
+        case 'Uncle':
+        case 'Aunt':
+          // Parents and their siblings (uncles/aunts) are in the same generation
+          parentsGeneration.push(member)
           break
         
         case 'Self':
@@ -125,10 +128,83 @@ export default function FamilyTreePage() {
       })
     }
 
+    // Sort current generation to center Self with siblings on sides
+    const sortCurrentGeneration = (gen: FamilyMember[]) => {
+      const self = gen.find(m => m.relationship === 'Self')
+      const siblings = gen.filter(m => ['Brother', 'Sister'].includes(m.relationship))
+      const spouses = gen.filter(m => ['Husband', 'Wife', 'Spouse', 'Partner'].includes(m.relationship))
+      
+      // Center Self, siblings on sides, spouses after
+      const sorted = []
+      if (self) sorted.push(self)
+      sorted.push(...siblings.sort((a, b) => a.relationship.localeCompare(b.relationship)))
+      sorted.push(...spouses.sort((a, b) => a.relationship.localeCompare(b.relationship)))
+      
+      return sorted
+    }
+
+    // Sort grandparents to match their parent connections
+    const sortGrandparentsByParent = (grandparents: FamilyMember[], parents: FamilyMember[]) => {
+      const sorted: FamilyMember[] = []
+      
+      // Group grandparents by their parent connection
+      parents.forEach(parent => {
+        const parentGrandparents = grandparents.filter(gp => {
+          // Check if this grandparent is connected to this parent via parentId
+          return gp.parentId === parent.id || 
+                 (parent.relationship === 'Father' && ['Paternal Grandfather', 'Paternal Grandmother'].includes(gp.relationship)) ||
+                 (parent.relationship === 'Mother' && ['Maternal Grandfather', 'Maternal Grandmother'].includes(gp.relationship))
+        })
+        
+        // Sort grandparents within each parent group (Father first, then Mother)
+        parentGrandparents.sort((a, b) => {
+          const aIsFather = ['Grandfather', 'Paternal Grandfather', 'Maternal Grandfather'].includes(a.relationship)
+          const bIsFather = ['Grandfather', 'Paternal Grandfather', 'Maternal Grandfather'].includes(b.relationship)
+          return aIsFather && !bIsFather ? -1 : !aIsFather && bIsFather ? 1 : 0
+        })
+        
+        sorted.push(...parentGrandparents)
+      })
+      
+      return sorted
+    }
+
+    // Sort parents generation (parents + uncles/aunts) by their relationships and connections
+    const sortParentsGeneration = (parentsGen: FamilyMember[]) => {
+      const parents = parentsGen.filter(m => ['Father', 'Mother'].includes(m.relationship))
+      const unclesAunts = parentsGen.filter(m => ['Uncle', 'Aunt'].includes(m.relationship))
+      
+      const sorted: FamilyMember[] = []
+      
+      // First add parents (Father, then Mother)
+      const sortedParents = parents.sort((a, b) => {
+        const aIsFather = a.relationship === 'Father'
+        const bIsFather = b.relationship === 'Father'
+        return aIsFather && !bIsFather ? -1 : !aIsFather && bIsFather ? 1 : 0
+      })
+      sorted.push(...sortedParents)
+      
+      // Then add uncles/aunts grouped by their parent connection
+      sortedParents.forEach(parent => {
+        const parentUnclesAunts = unclesAunts.filter(ua => ua.parentId === parent.id)
+        
+        // Sort within each parent group (Uncle first, then Aunt)
+        parentUnclesAunts.sort((a, b) => {
+          const aIsUncle = a.relationship === 'Uncle'
+          const bIsUncle = b.relationship === 'Uncle'
+          return aIsUncle && !bIsUncle ? -1 : !aIsUncle && bIsUncle ? 1 : 0
+        })
+        
+        sorted.push(...parentUnclesAunts)
+      })
+      
+      return sorted
+    }
+
     return {
-      grandparents: sortGeneration(grandparents),
-      parents: sortGeneration(parents),
-      currentGeneration: sortGeneration(currentGeneration),
+      grandparents: sortGrandparentsByParent(sortGeneration(grandparents), parentsGeneration.filter(m => ['Father', 'Mother'].includes(m.relationship))),
+      parents: sortParentsGeneration(parentsGeneration),
+      currentGeneration: sortCurrentGeneration(currentGeneration),
       children: sortGeneration(children)
     }
   }
@@ -206,6 +282,7 @@ export default function FamilyTreePage() {
     const initials = member.name.split(' ').map(n => n[0]).join('')
     const hasImage = Boolean(member.image)
     const ringColor = member.role === 'Living' ? 'ring-green-500' : 'ring-gray-400'
+    const isCreator = member.relationship === 'Self'
 
     const subtitle = member.deathYear
       ? `${member.birthYear} – ${member.deathYear}`
@@ -216,16 +293,25 @@ export default function FamilyTreePage() {
     return (
       <button
         onClick={() => navigate(`/family-tree/member/${member.id}`, { state: { member } })}
-        className="group relative flex flex-col items-center"
+        className="group relative flex flex-col items-center mx-2 sm:mx-3 lg:mx-4"
         title={`${member.name} • ${member.relationship}`}
       >
+        {/* Crown icon for tree creator */}
+        {isCreator && (
+          <div className="absolute -top-2 -right-1 z-10 bg-yellow-400 rounded-full p-1 shadow-lg">
+            <svg className="w-3 h-3 text-yellow-800" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          </div>
+        )}
+        
         <div className={`w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full ring-2 ${ringColor} ring-offset-2 overflow-hidden bg-gray-200 flex items-center justify-center`}
           style={hasImage ? { backgroundImage: `url(${member.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}>
           {!hasImage && <span className="text-gray-600 font-semibold text-xs sm:text-sm">{initials}</span>}
         </div>
-        <div className="mt-2 text-center">
-          <p className="text-xs sm:text-sm font-medium text-gray-900 leading-tight max-w-[120px] sm:max-w-[140px] lg:max-w-[160px] truncate">{member.name}</p>
-          <p className="text-xs text-gray-500">{subtitle}</p>
+        <div className="mt-2 text-center max-w-[140px] sm:max-w-[160px] lg:max-w-[180px]">
+          <p className="text-xs sm:text-sm font-medium text-gray-900 leading-tight break-words">{member.name}</p>
+          <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
         </div>
       </button>
     )
@@ -319,64 +405,72 @@ export default function FamilyTreePage() {
           <div className="relative min-w-[600px] sm:min-w-[800px] lg:min-w-[900px] py-10">
             {/* Zoomable content wrapper */}
             <div className="origin-center" style={{ transform: `scale(${scale})` }}>
-              {/* Dynamic tree rendering based on parent-child relationships */}
+              {/* Dynamic tree rendering with proper parent-child connections */}
               {familyData.grandparents.length > 0 && (
                 <>
-                  {/* Grandparents row */}
-                  <div className="flex justify-center gap-12 sm:gap-16 lg:gap-24 relative">
-                    {familyData.grandparents.map((m) => (
-                      <div key={m.id} className="flex flex-col items-center">
-                        <Node member={m} />
+                  {/* Grandparents row - organized by parent connection */}
+                  <div className="flex justify-center gap-8 sm:gap-12 lg:gap-16 relative">
+                    {familyData.grandparents.map((grandparent) => (
+                      <div key={grandparent.id} className="flex flex-col items-center">
+                        <Node member={grandparent} />
                       </div>
                     ))}
                   </div>
-                  {/* Connectors to parents */}
-                  <div className="flex justify-center items-center mt-2">
-                    <div className="h-6 w-px bg-gray-400"></div>
-                    <div className="mx-6 h-px w-56 bg-gray-400"></div>
-                    <div className="h-6 w-px bg-gray-400"></div>
-                  </div>
+                  
+                  {/* Connectors from grandparents to parents */}
+                  {familyData.parents.length > 0 && (
+                    <div className="flex justify-center items-center mt-4">
+                      <div className="flex items-center gap-8 sm:gap-12 lg:gap-16">
+                        {familyData.parents.map((parent) => (
+                          <div key={parent.id} className="flex flex-col items-center">
+                            <div className="h-6 w-px bg-gray-400"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
-              {/* Parents row */}
+              {/* Parents generation row - includes parents and their siblings (uncles/aunts) */}
               {familyData.parents.length > 0 && (
                 <>
-                  <div className="mt-4 flex justify-center gap-24 sm:gap-32 lg:gap-48 relative">
-                    {familyData.parents.map((m) => (
-                      <div key={m.id} className="flex flex-col items-center">
-                        <Node member={m} />
+                  <div className="mt-4 flex justify-center gap-6 sm:gap-8 lg:gap-10 relative">
+                    {familyData.parents.map((member) => (
+                      <div key={member.id} className="flex flex-col items-center">
+                        <Node member={member} />
                       </div>
                     ))}
                   </div>
-                  {/* Connector to current generation */}
-                  <div className="flex justify-center mt-2">
+                  
+                  {/* Connector from parents generation to current generation */}
+                  <div className="flex justify-center mt-4">
                     <div className="h-6 w-px bg-gray-400"></div>
                   </div>
                 </>
               )}
 
-              {/* Current generation */}
-              <div className="mt-4 flex justify-center">
-                {familyData.currentGeneration.map((m) => (
-                  <div key={m.id} className="flex flex-col items-center">
-                    <Node member={m} />
-                  </div>
-                ))}
-              </div>
+              {/* Current generation - centered with proper spacing */}
+              {familyData.currentGeneration.length > 0 && (
+                <div className="mt-4 flex justify-center items-center gap-4 sm:gap-6 lg:gap-8">
+                  {familyData.currentGeneration.map((member) => (
+                    <div key={member.id} className="flex flex-col items-center">
+                      <Node member={member} />
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Children row */}
               {familyData.children.length > 0 && (
                 <>
-                  <div className="flex justify-center items-center mt-2">
-                    <div className="h-6 w-px bg-gray-400"></div>
-                    <div className="mx-6 h-px w-48 bg-gray-400"></div>
+                  <div className="flex justify-center items-center mt-4">
                     <div className="h-6 w-px bg-gray-400"></div>
                   </div>
-                  <div className="mt-4 flex justify-center gap-16 sm:gap-24 lg:gap-32">
-                    {familyData.children.map((m) => (
-                      <div key={m.id} className="flex flex-col items-center">
-                        <Node member={m} />
+                  <div className="mt-4 flex justify-center gap-6 sm:gap-8 lg:gap-10">
+                    {familyData.children.map((child) => (
+                      <div key={child.id} className="flex flex-col items-center">
+                        <Node member={child} />
                       </div>
                     ))}
                   </div>

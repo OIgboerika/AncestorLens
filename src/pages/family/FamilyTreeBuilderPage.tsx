@@ -4,11 +4,6 @@ import {
   ArrowLeft, 
   Save, 
   Camera, 
-  UserPlus, 
-  Users,
-  Calendar,
-  MapPin,
-  Upload,
   X
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
@@ -473,12 +468,19 @@ const FamilyTreeBuilderPage = () => {
                   </option>
                 ))}
               </select>
-              <p className="text-sm text-gray-500 mt-1">
-                {['Grandfather', 'Grandmother', 'Uncle', 'Aunt', 'Cousin', 'Nephew', 'Niece'].includes(formData.relationship) 
-                  ? 'Select the parent to establish the family connection'
-                  : 'Optional: Link this person to an existing family member'
-                }
-              </p>
+              {formData.relationship === 'Uncle' || formData.relationship === 'Aunt' ? (
+                <p className="text-sm text-gray-500 mt-1">
+                  Select the parent (Father or Mother) to specify which side of the family this {formData.relationship.toLowerCase()} belongs to.
+                </p>
+              ) : formData.relationship === 'Brother' || formData.relationship === 'Sister' ? (
+                <p className="text-sm text-gray-500 mt-1">
+                  Select your parent (Father or Mother) to specify which side of the family this {formData.relationship.toLowerCase()} belongs to.
+                </p>
+              ) : formData.relationship && formData.relationship !== 'Self' ? (
+                <p className="text-sm text-gray-500 mt-1">
+                  Select the parent to establish the family relationship connection.
+                </p>
+              ) : null}
             </div>
           </div>
         </Card>

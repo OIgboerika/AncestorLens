@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, MapPin, Calendar, Share2, Eye, X } from 'lucide-react'
+import { Plus, Search, MapPin, Calendar, Share2, Eye, X, Upload, Camera } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 import LeafletMap from '../components/maps/LeafletMap'
@@ -74,6 +74,7 @@ const BurialSitesPage = () => {
   const [showMap, setShowMap] = useState(false)
   const [selectedSite, setSelectedSite] = useState<BurialSite | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
   const [newSite, setNewSite] = useState<Partial<BurialSite>>({
     name: '',
     deceasedName: '',
@@ -86,6 +87,7 @@ const BurialSitesPage = () => {
     lastVisit: '',
     images: []
   })
+  const [uploadedImages, setUploadedImages] = useState<File[]>([])
 
   // Load from localStorage and merge with defaults
   useEffect(() => {
@@ -116,6 +118,14 @@ const BurialSitesPage = () => {
 
   const openModal = () => setIsModalOpen(true)
   const closeModal = () => setIsModalOpen(false)
+  const openDetailsModal = (site: BurialSite) => {
+    setSelectedSite(site)
+    setIsDetailsModalOpen(true)
+  }
+  const closeDetailsModal = () => {
+    setIsDetailsModalOpen(false)
+    setSelectedSite(null)
+  }
 
   const handleNewSiteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -124,6 +134,15 @@ const BurialSitesPage = () => {
       return
     }
     setNewSite(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setUploadedImages(prev => [...prev, ...files])
+  }
+
+  const removeImage = (index: number) => {
+    setUploadedImages(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleMapClick = (lat: number, lng: number) => {
@@ -169,6 +188,7 @@ const BurialSitesPage = () => {
     setSites(prev => [...prev, payload])
     setIsModalOpen(false)
     setNewSite({ name: '', deceasedName: '', birthYear: '', deathYear: '', location: '', coordinates: { lat: 0, lng: 0 }, description: '', visitNotes: '', lastVisit: '', images: [] })
+    setUploadedImages([])
   }
 
   return (
@@ -240,27 +260,9 @@ const BurialSitesPage = () => {
               className="input-field pl-10"
             />
           </div>
-          <Button variant="outline">
-            View Map
-          </Button>
         </div>
       </Card>
 
-      {/* Map Placeholder */}
-      <Card className="mb-8">
-        <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-          <div className="text-center">
-            <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">Interactive Map</h3>
-            <p className="text-gray-500 mb-4">
-              Interactive map showing burial site locations
-            </p>
-            <Button variant="outline">
-              Enable Map View
-            </Button>
-          </div>
-        </div>
-      </Card>
 
       {/* Map or List View */}
       {showMap ? (
@@ -382,7 +384,7 @@ const BurialSitesPage = () => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => alert(`Viewing details for ${site.name}`)}>
+                    <Button variant="outline" size="sm" onClick={() => openDetailsModal(site)}>
                       View Details
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => {
@@ -423,14 +425,15 @@ const BurialSitesPage = () => {
 
       {/* Add Site Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
           <div className="absolute inset-0 bg-black/40" onClick={closeModal} />
-          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-xl p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-ancestor-dark">Add Burial Site</h3>
               <button onClick={closeModal} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-500" /></button>
             </div>
-            <form onSubmit={handleSaveSite} className="space-y-4">
+            <div className="p-6">
+              <form onSubmit={handleSaveSite} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Site Name *</label>
@@ -475,6 +478,52 @@ const BurialSitesPage = () => {
                   <p className="text-xs text-gray-500 mt-2">Click on the map to set coordinates</p>
                 </div>
                 <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Photos</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <div className="text-center">
+                      <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-2">Upload photos of the burial site</p>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="image-upload"
+                      />
+                      <label htmlFor="image-upload" className="cursor-pointer">
+                        <Button variant="outline" size="sm" type="button">
+                          <Upload className="w-4 h-4 mr-2" />
+                          Choose Photos
+                        </Button>
+                      </label>
+                    </div>
+                    {uploadedImages.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 mb-2">Selected photos:</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {uploadedImages.map((file, index) => (
+                            <div key={index} className="relative">
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={`Upload ${index + 1}`}
+                                className="w-full h-20 object-cover rounded border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                   <textarea name="description" value={newSite.description as string} onChange={handleNewSiteChange} className="input-field resize-none" rows={3} placeholder="Notes about the site..." />
                 </div>
@@ -483,11 +532,117 @@ const BurialSitesPage = () => {
                   <input name="lastVisit" value={newSite.lastVisit as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., March 15, 2024" />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
-                <Button type="submit">Save Site</Button>
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                  <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
+                  <Button type="submit">Save Site</Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Site Details Modal */}
+      {isDetailsModalOpen && selectedSite && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="absolute inset-0 bg-black/40" onClick={closeDetailsModal} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-ancestor-dark">Burial Site Details</h3>
+              <button onClick={closeDetailsModal} className="p-1 rounded hover:bg-gray-100">
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Site Images */}
+                {selectedSite.images && selectedSite.images.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Photos</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      {selectedSite.images.map((image, index) => (
+                        <div key={index} className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
+                          <img 
+                            src={image} 
+                            alt={`${selectedSite.name} - Photo ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='60' font-family='sans-serif' font-size='14' text-anchor='middle' fill='%236b7280'%3EHeadstone%3C/text%3E%3C/svg%3E"
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Site Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Site Name</h4>
+                    <p className="text-gray-900">{selectedSite.name}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Deceased Name</h4>
+                    <p className="text-gray-900">{selectedSite.deceasedName}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Birth Year</h4>
+                    <p className="text-gray-900">{selectedSite.birthYear || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Death Year</h4>
+                    <p className="text-gray-900">{selectedSite.deathYear || 'Unknown'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Location</h4>
+                    <p className="text-gray-900">{selectedSite.location}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Coordinates</h4>
+                    <p className="text-gray-900">
+                      {selectedSite.coordinates.lat.toFixed(4)}°N, {selectedSite.coordinates.lng.toFixed(4)}°E
+                    </p>
+                  </div>
+                  {selectedSite.description && (
+                    <div className="md:col-span-2">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
+                      <p className="text-gray-900">{selectedSite.description}</p>
+                    </div>
+                  )}
+                  {selectedSite.visitNotes && (
+                    <div className="md:col-span-2">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Visit Notes</h4>
+                      <p className="text-gray-900">{selectedSite.visitNotes}</p>
+                    </div>
+                  )}
+                  {selectedSite.lastVisit && (
+                    <div className="md:col-span-2">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Last Visit</h4>
+                      <p className="text-gray-900">{selectedSite.lastVisit}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Map */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Location Map</h4>
+                  <div className="rounded-lg overflow-hidden border border-gray-200">
+                    <LeafletMap
+                      center={[selectedSite.coordinates.lat, selectedSite.coordinates.lng]}
+                      zoom={15}
+                      markers={[{
+                        id: selectedSite.id.toString(),
+                        position: [selectedSite.coordinates.lat, selectedSite.coordinates.lng],
+                        title: selectedSite.name,
+                        description: `${selectedSite.deceasedName} (${selectedSite.birthYear || 'Unknown'} - ${selectedSite.deathYear || 'Unknown'})`
+                      }]}
+                      height="300px"
+                    />
+                  </div>
+                </div>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
