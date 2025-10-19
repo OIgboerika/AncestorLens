@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, MapPin, Calendar, Share2, Eye, X, Upload, Camera } from 'lucide-react'
+import { Plus, Search, MapPin, Calendar, Share2, Eye, X, Upload, Camera, Navigation } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 import LeafletMap from '../components/maps/LeafletMap'
@@ -75,6 +75,8 @@ const BurialSitesPage = () => {
   const [selectedSite, setSelectedSite] = useState<BurialSite | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editSite, setEditSite] = useState<Partial<BurialSite> | null>(null)
   const [newSite, setNewSite] = useState<Partial<BurialSite>>({
     name: '',
     deceasedName: '',
@@ -88,6 +90,10 @@ const BurialSitesPage = () => {
     images: []
   })
   const [uploadedImages, setUploadedImages] = useState<File[]>([])
+  const [editUploadedImages, setEditUploadedImages] = useState<File[]>([])
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
 
   // Load from localStorage and merge with defaults
   useEffect(() => {
@@ -127,13 +133,59 @@ const BurialSitesPage = () => {
     setSelectedSite(null)
   }
 
+  const openEditModal = (site: BurialSite) => {
+    setEditSite({ ...site })
+    setEditUploadedImages([])
+    setIsEditModalOpen(true)
+  }
+  const closeEditModal = () => {
+    setIsEditModalOpen(false)
+    setEditSite(null)
+    setEditUploadedImages([])
+  }
+
   const handleNewSiteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     if (name === 'lat' || name === 'lng') {
-      setNewSite(prev => ({ ...prev, coordinates: { lat: name === 'lat' ? Number(value) : (prev.coordinates?.lat || 0), lng: name === 'lng' ? Number(value) : (prev.coordinates?.lng || 0) } }))
+      const numValue = value === '' ? 0 : parseFloat(value)
+      if (!isNaN(numValue)) {
+        setNewSite(prev => ({ 
+          ...prev, 
+          coordinates: { 
+            lat: name === 'lat' ? numValue : (prev.coordinates?.lat || 0), 
+            lng: name === 'lng' ? numValue : (prev.coordinates?.lng || 0) 
+          } 
+        }))
+      }
+      return
+    }
+    if (name === 'location') {
+      setNewSite(prev => ({ ...prev, [name]: value }))
+      // Generate location suggestions
+      generateLocationSuggestions(value)
+      setShowSuggestions(value.length > 2)
       return
     }
     setNewSite(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleEditSiteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!editSite) return
+    const { name, value } = e.target
+    if (name === 'lat' || name === 'lng') {
+      const numValue = value === '' ? 0 : parseFloat(value)
+      if (!isNaN(numValue)) {
+        setEditSite(prev => ({ 
+          ...prev!, 
+          coordinates: { 
+            lat: name === 'lat' ? numValue : (prev?.coordinates?.lat || 0), 
+            lng: name === 'lng' ? numValue : (prev?.coordinates?.lng || 0) 
+          } 
+        }))
+      }
+      return
+    }
+    setEditSite(prev => ({ ...prev!, [name]: value }))
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,6 +195,168 @@ const BurialSitesPage = () => {
 
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setEditUploadedImages(prev => [...prev, ...files])
+  }
+
+  const removeEditImage = (index: number) => {
+    setEditUploadedImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  // Well-known cemeteries and burial sites in Nigeria
+  const wellKnownLocations = [
+    'Abuja Central Cemetery',
+    'Lagos Memorial Garden',
+    'Enugu Burial Ground',
+    'Kaduna Cemetery',
+    'Kano Cemetery',
+    'Port Harcourt Cemetery',
+    'Ibadan Cemetery',
+    'Jos Cemetery',
+    'Maiduguri Cemetery',
+    'Calabar Cemetery',
+    'Benin Cemetery',
+    'Abeokuta Cemetery',
+    'Warri Cemetery',
+    'Uyo Cemetery',
+    'Owerri Cemetery',
+    'Akure Cemetery',
+    'Ilorin Cemetery',
+    'Bauchi Cemetery',
+    'Gombe Cemetery',
+    'Yola Cemetery',
+    'Makurdi Cemetery',
+    'Lokoja Cemetery',
+    'Minna Cemetery',
+    'Katsina Cemetery',
+    'Sokoto Cemetery',
+    'Zaria Cemetery',
+    'Keffi Cemetery',
+    'Nasarawa Cemetery',
+    'Lafia Cemetery',
+    'Dutse Cemetery',
+    'Damaturu Cemetery',
+    'Birnin Kebbi Cemetery',
+    'Gusau Cemetery',
+    'Katsina Cemetery',
+    'Dutse Cemetery',
+    'Jalingo Cemetery',
+    'Yenagoa Cemetery',
+    'Asaba Cemetery',
+    'Awka Cemetery',
+    'Abakaliki Cemetery',
+    'Ogoja Cemetery',
+    'Ikot Ekpene Cemetery',
+    'Umuahia Cemetery',
+    'Orlu Cemetery',
+    'Nnewi Cemetery',
+    'Onitsha Cemetery',
+    'Aba Cemetery',
+    'Umuahia Cemetery',
+    'Owerri Cemetery',
+    'Port Harcourt Cemetery',
+    'Yenagoa Cemetery',
+    'Asaba Cemetery',
+    'Awka Cemetery',
+    'Abakaliki Cemetery',
+    'Ogoja Cemetery',
+    'Ikot Ekpene Cemetery',
+    'Umuahia Cemetery',
+    'Orlu Cemetery',
+    'Nnewi Cemetery',
+    'Onitsha Cemetery',
+    'Aba Cemetery'
+  ]
+
+  const generateLocationSuggestions = (query: string) => {
+    if (query.length < 2) {
+      setLocationSuggestions([])
+      return
+    }
+    
+    const filtered = wellKnownLocations
+      .filter(location => 
+        location.toLowerCase().includes(query.toLowerCase())
+      )
+      .slice(0, 5) // Limit to 5 suggestions
+    
+    setLocationSuggestions(filtered)
+  }
+
+  const selectLocationSuggestion = (location: string) => {
+    setNewSite(prev => ({ ...prev, location }))
+    setShowSuggestions(false)
+    
+    // Try to get coordinates for well-known locations
+    const knownCoordinates: { [key: string]: { lat: number; lng: number } } = {
+      'Abuja Central Cemetery': { lat: 9.0765, lng: 7.3986 },
+      'Lagos Memorial Garden': { lat: 6.5244, lng: 3.3792 },
+      'Enugu Burial Ground': { lat: 6.5244, lng: 7.4951 },
+      'Kaduna Cemetery': { lat: 10.5200, lng: 7.4383 },
+      'Kano Cemetery': { lat: 12.0022, lng: 8.5920 },
+      'Port Harcourt Cemetery': { lat: 4.8156, lng: 7.0498 },
+      'Ibadan Cemetery': { lat: 7.3775, lng: 3.9470 },
+      'Jos Cemetery': { lat: 9.9167, lng: 8.9000 },
+      'Maiduguri Cemetery': { lat: 11.8333, lng: 13.1500 },
+      'Calabar Cemetery': { lat: 4.9500, lng: 8.3167 }
+    }
+    
+    if (knownCoordinates[location]) {
+      setNewSite(prev => ({ 
+        ...prev, 
+        coordinates: knownCoordinates[location] 
+      }))
+    }
+  }
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by this browser.')
+      return
+    }
+
+    setIsGettingLocation(true)
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setNewSite(prev => ({ 
+          ...prev, 
+          coordinates: { lat: latitude, lng: longitude } 
+        }))
+        setIsGettingLocation(false)
+        
+        // Reverse geocoding to get location name
+        fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.city && data.principalSubdivision) {
+              const locationName = `${data.city}, ${data.principalSubdivision}`
+              setNewSite(prev => ({ ...prev, location: locationName }))
+            }
+          })
+          .catch(() => {
+            // Fallback if reverse geocoding fails
+            setNewSite(prev => ({ 
+              ...prev, 
+              location: `Current Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})` 
+            }))
+          })
+      },
+      (error) => {
+        setIsGettingLocation(false)
+        console.error('Error getting location:', error)
+        alert('Unable to retrieve your location. Please check your browser permissions.')
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000
+      }
+    )
   }
 
   const handleMapClick = (lat: number, lng: number) => {
@@ -156,12 +370,20 @@ const BurialSitesPage = () => {
     }
   }
 
-  const handleSaveSite = (e: React.FormEvent) => {
+  const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+
+  const handleSaveSite = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newSite.name || !newSite.deceasedName || !newSite.location) {
       alert('Please fill in Name, Deceased Name, and Location')
       return
     }
+    const imageUrls = await Promise.all(uploadedImages.map(fileToDataUrl))
     const payload: BurialSite = {
       id: Date.now(),
       name: newSite.name!,
@@ -173,7 +395,7 @@ const BurialSitesPage = () => {
       description: newSite.description || undefined,
       visitNotes: newSite.visitNotes || undefined,
       lastVisit: newSite.lastVisit || undefined,
-      images: newSite.images || []
+      images: (newSite.images && newSite.images.length > 0) ? newSite.images : imageUrls
     }
 
     const existing = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
@@ -189,6 +411,36 @@ const BurialSitesPage = () => {
     setIsModalOpen(false)
     setNewSite({ name: '', deceasedName: '', birthYear: '', deathYear: '', location: '', coordinates: { lat: 0, lng: 0 }, description: '', visitNotes: '', lastVisit: '', images: [] })
     setUploadedImages([])
+  }
+
+  const handleUpdateSite = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editSite?.id || !editSite.name || !editSite.deceasedName || !editSite.location) {
+      alert('Please fill in Name, Deceased Name, and Location')
+      return
+    }
+    const newImageUrls = await Promise.all(editUploadedImages.map(fileToDataUrl))
+    const updated: BurialSite = {
+      id: Number(editSite.id),
+      name: editSite.name,
+      deceasedName: editSite.deceasedName,
+      birthYear: editSite.birthYear || undefined,
+      deathYear: editSite.deathYear || undefined,
+      location: editSite.location,
+      coordinates: editSite.coordinates || { lat: 0, lng: 0 },
+      description: editSite.description || undefined,
+      visitNotes: editSite.visitNotes || undefined,
+      lastVisit: editSite.lastVisit || undefined,
+      images: [...(editSite.images || []), ...newImageUrls]
+    }
+
+    const updatedSites = sites.map(s => s.id === updated.id ? updated : s)
+    setSites(updatedSites)
+    localStorage.setItem('burialSites', JSON.stringify(updatedSites.filter(s => !DEFAULT_SITES.some(ds => ds.id === s.id))))
+
+    setIsEditModalOpen(false)
+    setEditSite(null)
+    setEditUploadedImages([])
   }
 
   return (
@@ -387,6 +639,9 @@ const BurialSitesPage = () => {
                     <Button variant="outline" size="sm" onClick={() => openDetailsModal(site)}>
                       View Details
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => openEditModal(site)}>
+                      Edit
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => {
                       const visitDate = prompt('Enter visit date (e.g., March 15, 2024):')
                       if (visitDate) {
@@ -453,18 +708,72 @@ const BurialSitesPage = () => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
-                  <input name="location" value={newSite.location as string} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., Abuja Central Cemetery" required />
+                  <div className="relative">
+                    <input 
+                      name="location" 
+                      value={newSite.location as string} 
+                      onChange={handleNewSiteChange} 
+                      className="input-field pr-20" 
+                      placeholder="e.g., Abuja Central Cemetery" 
+                      required 
+                      onFocus={() => setShowSuggestions(Boolean(newSite.location && newSite.location.length > 2))}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={getCurrentLocation}
+                      disabled={isGettingLocation}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 px-2 py-1 text-xs"
+                    >
+                      <Navigation className="w-3 h-3 mr-1" />
+                      {isGettingLocation ? 'Getting...' : 'Current'}
+                    </Button>
+                    
+                    {/* Location Suggestions Dropdown */}
+                    {showSuggestions && locationSuggestions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {locationSuggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                            onClick={() => selectLocationSuggestion(suggestion)}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Location Coordinates</label>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Latitude</label>
-                      <input name="lat" value={newSite.coordinates?.lat ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 9.0765" />
+                      <input 
+                        name="lat" 
+                        value={newSite.coordinates?.lat || ''} 
+                        onChange={handleNewSiteChange} 
+                        className="input-field" 
+                        placeholder="e.g., 9.0765" 
+                        type="number"
+                        step="any"
+                      />
                     </div>
                     <div>
                       <label className="block text-xs text-gray-500 mb-1">Longitude</label>
-                      <input name="lng" value={newSite.coordinates?.lng ?? 0} onChange={handleNewSiteChange} className="input-field" placeholder="e.g., 7.3986" />
+                      <input 
+                        name="lng" 
+                        value={newSite.coordinates?.lng || ''} 
+                        onChange={handleNewSiteChange} 
+                        className="input-field" 
+                        placeholder="e.g., 7.3986" 
+                        type="number"
+                        step="any"
+                      />
                     </div>
                   </div>
                   <div className="rounded-lg overflow-hidden border border-gray-200">
@@ -555,6 +864,9 @@ const BurialSitesPage = () => {
             </div>
             <div className="p-6">
               <div className="space-y-6">
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={() => selectedSite && openEditModal(selectedSite)}>Edit</Button>
+                </div>
                 {/* Site Images */}
                 {selectedSite.images && selectedSite.images.length > 0 && (
                   <div>
@@ -642,6 +954,137 @@ const BurialSitesPage = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Site Modal */}
+      {isEditModalOpen && editSite && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="absolute inset-0 bg-black/40" onClick={closeEditModal} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-ancestor-dark">Edit Burial Site</h3>
+              <button onClick={closeEditModal} className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-500" /></button>
+            </div>
+            <div className="p-6">
+              <form onSubmit={handleUpdateSite} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Site Name *</label>
+                    <input name="name" value={editSite.name as string} onChange={handleEditSiteChange} className="input-field" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Deceased Name *</label>
+                    <input name="deceasedName" value={editSite.deceasedName as string} onChange={handleEditSiteChange} className="input-field" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Birth Year</label>
+                    <input name="birthYear" value={editSite.birthYear as string} onChange={handleEditSiteChange} className="input-field" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Death Year</label>
+                    <input name="deathYear" value={editSite.deathYear as string} onChange={handleEditSiteChange} className="input-field" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location *</label>
+                    <input name="location" value={editSite.location as string} onChange={handleEditSiteChange} className="input-field" required />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Location Coordinates</label>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+                        <input 
+                          name="lat" 
+                          value={editSite.coordinates?.lat || ''} 
+                          onChange={handleEditSiteChange} 
+                          className="input-field" 
+                          type="number"
+                          step="any"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+                        <input 
+                          name="lng" 
+                          value={editSite.coordinates?.lng || ''} 
+                          onChange={handleEditSiteChange} 
+                          className="input-field" 
+                          type="number"
+                          step="any"
+                        />
+                      </div>
+                    </div>
+                    <div className="rounded-lg overflow-hidden border border-gray-200">
+                      <LeafletMap
+                        center={[editSite.coordinates?.lat || 9.0765, editSite.coordinates?.lng || 7.3986]}
+                        zoom={15}
+                        onMapClick={(lat, lng) => setEditSite(prev => ({ ...prev!, coordinates: { lat, lng } }))}
+                        height="300px"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Click on the map to set coordinates</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Photos</label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                      <div className="text-center">
+                        <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-sm text-gray-600 mb-2">Upload additional photos</p>
+                        <input type="file" multiple accept="image/*" onChange={handleEditImageUpload} className="hidden" id="edit-image-upload" />
+                        <label htmlFor="edit-image-upload" className="cursor-pointer">
+                          <Button variant="outline" size="sm" type="button"><Upload className="w-4 h-4 mr-2" />Choose Photos</Button>
+                        </label>
+                      </div>
+                      {(editSite.images && editSite.images.length > 0) && (
+                        <div className="mt-4">
+                          <p className="text-sm text-gray-600 mb-2">Existing photos:</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {editSite.images!.map((src, index) => (
+                              <div key={index} className="relative">
+                                <img src={src} alt={`Existing ${index + 1}`} className="w-full h-20 object-cover rounded border" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {editUploadedImages.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm text-gray-600 mb-2">New photos to add:</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {editUploadedImages.map((file, index) => (
+                              <div key={index} className="relative">
+                                <img src={URL.createObjectURL(file)} alt={`New ${index + 1}`} className="w-full h-20 object-cover rounded border" />
+                                <button type="button" onClick={() => removeEditImage(index)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" value={editSite.description as string} onChange={handleEditSiteChange} className="input-field resize-none" rows={3} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Visit Notes</label>
+                    <textarea name="visitNotes" value={editSite.visitNotes as string} onChange={handleEditSiteChange} className="input-field resize-none" rows={2} />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Last Visit</label>
+                    <input name="lastVisit" value={editSite.lastVisit as string} onChange={handleEditSiteChange} className="input-field" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+                  <Button type="button" variant="outline" onClick={closeEditModal}>Cancel</Button>
+                  <Button type="submit">Save Changes</Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
