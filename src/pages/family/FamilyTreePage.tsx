@@ -278,6 +278,57 @@ export default function FamilyTreePage() {
     }
   }, [familyData])
 
+  // Helper function to determine if two members are married
+  const areMarried = (member1: FamilyMember, member2: FamilyMember) => {
+    const marriagePairs = [
+      ['Father', 'Mother'],
+      ['Grandfather', 'Grandmother'],
+      ['Paternal Grandfather', 'Paternal Grandmother'],
+      ['Maternal Grandfather', 'Maternal Grandmother'],
+      ['Husband', 'Wife'],
+      ['Self', 'Spouse'],
+      ['Self', 'Partner']
+    ]
+    
+    return marriagePairs.some(pair => 
+      (pair.includes(member1.relationship) && pair.includes(member2.relationship)) ||
+      (member1.relationship === 'Self' && ['Husband', 'Wife', 'Spouse', 'Partner'].includes(member2.relationship)) ||
+      (member2.relationship === 'Self' && ['Husband', 'Wife', 'Spouse', 'Partner'].includes(member1.relationship))
+    )
+  }
+
+  // Helper function to determine if two members are siblings
+  const areSiblings = (member1: FamilyMember, member2: FamilyMember) => {
+    // Check if they have the same parentId
+    if (member1.parentId === member2.parentId && 
+        member1.parentId !== undefined && 
+        member1.id !== member2.id) {
+      return true
+    }
+    
+    // Also check if they are both children of the same parents (Father/Mother)
+    const allMembers = [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children]
+    const member1Parents = allMembers.filter(m => m.id === member1.parentId)
+    const member2Parents = allMembers.filter(m => m.id === member2.parentId)
+    
+    // If both have parents and those parents are married, they are siblings
+    if (member1Parents.length > 0 && member2Parents.length > 0) {
+      const parent1 = member1Parents[0]
+      const parent2 = member2Parents[0]
+      return areMarried(parent1, parent2)
+    }
+    
+    return false
+  }
+
+  // Helper function to get all children of a parent couple
+  const getChildrenOfParents = (parent1: FamilyMember, parent2: FamilyMember) => {
+    const allMembers = [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children]
+    return allMembers.filter(member => 
+      member.parentId === parent1.id || member.parentId === parent2.id
+    )
+  }
+
   const Node = ({ member }: { member: FamilyMember }) => {
     const initials = member.name.split(' ').map(n => n[0]).join('')
     const hasImage = Boolean(member.image)
@@ -406,11 +457,12 @@ export default function FamilyTreePage() {
           <div className="relative min-w-[600px] sm:min-w-[800px] lg:min-w-[900px] py-10">
             {/* Zoomable content wrapper */}
             <div className="origin-center" style={{ transform: `scale(${scale})` }}>
-              {/* Dynamic tree rendering with proper parent-child connections */}
+              {/* Dynamic tree rendering with proper family connections */}
+              
+              {/* Grandparents Generation */}
               {familyData.grandparents.length > 0 && (
                 <>
-                  {/* Grandparents row - organized by parent connection */}
-                  <div className="flex justify-center gap-8 sm:gap-12 lg:gap-16 relative">
+                  <div className="flex justify-center gap-8 sm:gap-12 lg:gap-16">
                     {familyData.grandparents.map((grandparent) => (
                       <div key={grandparent.id} className="flex flex-col items-center">
                         <Node member={grandparent} />
@@ -418,25 +470,41 @@ export default function FamilyTreePage() {
                     ))}
                   </div>
                   
-                  {/* Connectors from grandparents to parents */}
+                  {/* Marriage lines for grandparents */}
+                  <div className="flex justify-center mt-4">
+                    <div className="flex items-center gap-8 sm:gap-12 lg:gap-16">
+                      {familyData.grandparents.map((grandparent) => (
+                        <div key={`marriage-${grandparent.id}`} className="flex items-center">
+                          {familyData.grandparents.find(gp => 
+                            gp.id !== grandparent.id && areMarried(grandparent, gp)
+                          ) && (
+                            <div className="w-8 sm:w-12 lg:w-16 h-0.5 bg-gray-800"></div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Vertical connector from grandparents to parents */}
                   {familyData.parents.length > 0 && (
                     <div className="flex justify-center items-center mt-4">
-                      <div className="flex items-center gap-8 sm:gap-12 lg:gap-16">
-                        {familyData.parents.map((parent) => (
-                          <div key={parent.id} className="flex flex-col items-center">
-                            <div className="h-6 w-px bg-gray-400"></div>
-                          </div>
-                        ))}
-                      </div>
+                      <div className="h-6 w-0.5 bg-gray-800"></div>
+                    </div>
+                  )}
+                  
+                  {/* Additional vertical line for Uncle (Chukwueme) from grandparents */}
+                  {familyData.parents.find(p => p.relationship === 'Uncle') && (
+                    <div className="flex justify-center items-center mt-4">
+                      <div className="h-6 w-0.5 bg-gray-800"></div>
                     </div>
                   )}
                 </>
               )}
 
-              {/* Parents generation row - includes parents and their siblings (uncles/aunts) */}
+              {/* Parents Generation */}
               {familyData.parents.length > 0 && (
                 <>
-                  <div className="mt-4 flex justify-center gap-6 sm:gap-8 lg:gap-10 relative">
+                  <div className="mt-4 flex justify-center gap-6 sm:gap-8 lg:gap-10">
                     {familyData.parents.map((member) => (
                       <div key={member.id} className="flex flex-col items-center">
                         <Node member={member} />
@@ -444,14 +512,34 @@ export default function FamilyTreePage() {
                     ))}
                   </div>
                   
-                  {/* Connector from parents generation to current generation */}
+                  {/* Marriage and sibling lines for parents generation */}
                   <div className="flex justify-center mt-4">
-                    <div className="h-6 w-px bg-gray-400"></div>
+                    <div className="flex items-center gap-6 sm:gap-8 lg:gap-10">
+                      {familyData.parents.map((member) => (
+                        <div key={`connection-${member.id}`} className="flex items-center">
+                          {/* Marriage line between Father and Mother */}
+                          {member.relationship === 'Father' && 
+                           familyData.parents.find(m => m.relationship === 'Mother') && (
+                            <div className="w-6 sm:w-8 lg:w-10 h-0.5 bg-gray-800"></div>
+                          )}
+                          {/* Sibling line between Father and Uncle */}
+                          {member.relationship === 'Father' && 
+                           familyData.parents.find(m => m.relationship === 'Uncle') && (
+                            <div className="w-6 sm:w-8 lg:w-10 h-0.5 bg-gray-800"></div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Vertical connector from parents to current generation */}
+                  <div className="flex justify-center mt-4">
+                    <div className="h-6 w-0.5 bg-gray-800"></div>
                   </div>
                 </>
               )}
 
-              {/* Current generation - centered with proper spacing */}
+              {/* Current Generation */}
               {familyData.currentGeneration.length > 0 && (
                 <div className="mt-4 flex justify-center items-center gap-4 sm:gap-6 lg:gap-8">
                   {familyData.currentGeneration.map((member) => (
@@ -462,12 +550,34 @@ export default function FamilyTreePage() {
                 </div>
               )}
 
-              {/* Children row */}
+              {/* Children Generation */}
               {familyData.children.length > 0 && (
                 <>
+                  {/* Vertical connector from current generation to children */}
                   <div className="flex justify-center items-center mt-4">
-                    <div className="h-6 w-px bg-gray-400"></div>
+                    <div className="h-6 w-0.5 bg-gray-800"></div>
                   </div>
+                  
+                  {/* Horizontal line connecting all children */}
+                  {familyData.children.length > 1 && (
+                    <div className="flex justify-center mt-4">
+                      <div className="w-8 sm:w-12 lg:w-16 h-0.5 bg-gray-800"></div>
+                    </div>
+                  )}
+                  
+                  {/* Individual vertical lines to each child */}
+                  {familyData.children.length > 1 && (
+                    <div className="flex justify-center items-center mt-4">
+                      <div className="flex items-center gap-6 sm:gap-8 lg:gap-10">
+                        {familyData.children.map((child) => (
+                          <div key={child.id} className="flex flex-col items-center">
+                            <div className="h-6 w-0.5 bg-gray-800"></div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="mt-4 flex justify-center gap-6 sm:gap-8 lg:gap-10">
                     {familyData.children.map((child) => (
                       <div key={child.id} className="flex flex-col items-center">
