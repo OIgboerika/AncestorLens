@@ -311,6 +311,7 @@ export default function FamilyTreePage() {
         </div>
         <div className="mt-2 text-center max-w-[140px] sm:max-w-[160px] lg:max-w-[180px]">
           <p className="text-xs sm:text-sm font-medium text-gray-900 leading-tight break-words">{member.name}</p>
+          <p className="text-xs text-ancestor-primary font-medium mt-0.5">{member.relationship}</p>
           <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
         </div>
       </button>

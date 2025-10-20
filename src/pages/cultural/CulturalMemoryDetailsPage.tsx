@@ -2,7 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Play, Pause, Share2, Download, Calendar, Clock, User, MapPin, Volume2, Image as ImageIcon } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { culturalMemoryService } from '../../firebase/services/culturalMemoryService'
 import React from 'react'
@@ -21,6 +21,7 @@ interface MemoryItem {
   duration?: string
   imageUrl?: string
   images?: string[]
+  audioUrl?: string
   participants?: string[]
   tags?: string[]
 }
@@ -33,6 +34,7 @@ export default function CulturalMemoryDetailsPage() {
   const [playing, setPlaying] = useState(false)
   const memoryFromState = state?.memory as MemoryItem | undefined
   const [memory, setMemory] = useState<MemoryItem | undefined>(memoryFromState)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Load from Firestore if navigated directly
   React.useEffect(() => {
@@ -42,6 +44,15 @@ export default function CulturalMemoryDetailsPage() {
       }).catch(() => {})
     }
   }, [id, user, memoryFromState])
+
+  useEffect(() => {
+    if (!audioRef.current) return
+    if (playing) {
+      audioRef.current.play().catch(() => setPlaying(false))
+    } else {
+      audioRef.current.pause()
+    }
+  }, [playing])
 
   // Gallery state for images
   const images = useMemo(() => memory?.images || (memory?.imageUrl ? [memory.imageUrl] : []), [memory])
@@ -67,10 +78,17 @@ export default function CulturalMemoryDetailsPage() {
         <div className="lg:col-span-2">
           <Card>
             {memory.type === 'audio' ? (
-              <div className="rounded-xl bg-gradient-to-br from-ancestor-primary/15 to-ancestor-secondary/15 aspect-video flex items-center justify-center">
-                <button onClick={() => setPlaying(p => !p)} className="w-20 h-20 rounded-full bg-white shadow flex items-center justify-center hover:scale-105 transition">
-                  {playing ? <Pause className="w-8 h-8 text-ancestor-primary" /> : <Play className="w-8 h-8 text-ancestor-primary ml-1" />}
-                </button>
+              <div className="p-6">
+                <div className="rounded-xl bg-gradient-to-br from-ancestor-primary/15 to-ancestor-secondary/15 aspect-video flex items-center justify-center">
+                  <button onClick={() => setPlaying(p => !p)} className="w-20 h-20 rounded-full bg-white shadow flex items-center justify-center hover:scale-105 transition">
+                    {playing ? <Pause className="w-8 h-8 text-ancestor-primary" /> : <Play className="w-8 h-8 text-ancestor-primary ml-1" />}
+                  </button>
+                </div>
+                {memory.audioUrl && (
+                  <div className="mt-4">
+                    <audio ref={audioRef} src={memory.audioUrl} controls className="w-full" />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="p-4">
@@ -116,11 +134,15 @@ export default function CulturalMemoryDetailsPage() {
               )}
               <div className="flex items-center"><MapPin className="w-4 h-4 mr-2 text-gray-400" /> {memory.location}</div>
             </div>
-            {memory.participants && memory.participants.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm text-gray-600"><span className="font-medium text-ancestor-dark">Participants:</span> {memory.participants.join(', ')}</p>
-              </div>
-            )}
+            {(() => {
+              const p: any = (memory as any).participants
+              const text = Array.isArray(p) ? p.join(', ') : (typeof p === 'string' ? p : '')
+              return text ? (
+                <div className="mt-4">
+                  <p className="text-sm text-gray-600"><span className="font-medium text-ancestor-dark">Participants:</span> {text}</p>
+                </div>
+              ) : null
+            })()}
             {memory.tags && memory.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
                 {memory.tags.map(t => (

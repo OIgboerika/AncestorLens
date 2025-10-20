@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, Mic, Upload, Save, FileAudio, Image as ImageIcon } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
@@ -14,6 +14,11 @@ export default function UploadMemoryPage() {
   const [mediaType, setMediaType] = useState<'audio' | 'image'>('audio')
   const [isRecording, setIsRecording] = useState(false)
   const [audioFile, setAudioFile] = useState<File | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const mediaStreamRef = useRef<MediaStream | null>(null)
+  const recordedChunksRef = useRef<BlobPart[]>([])
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null)
+  const [audioError, setAudioError] = useState<string | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [formData, setFormData] = useState({
     title: '',
@@ -27,14 +32,63 @@ export default function UploadMemoryPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
 
-  const startRecording = () => setIsRecording(true)
-  const stopRecording = () => setIsRecording(false)
+  useEffect(() => {
+    return () => {
+      if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl)
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop())
+      }
+    }
+  }, [audioPreviewUrl])
+
+  const startRecording = async () => {
+    try {
+      setAudioError(null)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      mediaStreamRef.current = stream
+      const recorder = new MediaRecorder(stream)
+      recordedChunksRef.current = []
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) recordedChunksRef.current.push(e.data)
+      }
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' })
+        const file = new File([blob], `recording-${Date.now()}.webm`, { type: 'audio/webm' })
+        setAudioFile(file)
+        if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl)
+        const url = URL.createObjectURL(blob)
+        setAudioPreviewUrl(url)
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach(t => t.stop())
+          mediaStreamRef.current = null
+        }
+      }
+      mediaRecorderRef.current = recorder
+      recorder.start()
+      setIsRecording(true)
+    } catch (err: any) {
+      console.error('Microphone access error:', err)
+      setAudioError('Microphone access denied or unavailable')
+    }
+  }
+
+  const stopRecording = () => {
+    try {
+      mediaRecorderRef.current?.stop()
+    } finally {
+      setIsRecording(false)
+    }
+  }
 
   const onPick = () => fileRef.current?.click()
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || !files.length) return
-    if (mediaType === 'audio') setAudioFile(files[0])
+    if (mediaType === 'audio') {
+      setAudioFile(files[0])
+      if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl)
+      setAudioPreviewUrl(URL.createObjectURL(files[0]))
+    }
     else setImageFiles([...imageFiles, ...Array.from(files)])
   }
 
@@ -76,13 +130,17 @@ export default function UploadMemoryPage() {
         imageUrl = imagesData[0]
       }
       if (mediaType === 'audio' && audioFile) {
-        // For audio files, we'll still use data URLs for now (Cloudinary supports audio but requires different handling)
-        audioUrl = await new Promise<string>((resolve, reject) => {
-          const r = new FileReader()
-          r.onload = () => resolve(r.result as string)
-          r.onerror = reject
-          r.readAsDataURL(audioFile)
-        })
+        // Upload audio to Cloudinary (video endpoint supports audio)
+        const audioResult = await cloudinaryService.uploadAudio(
+          audioFile,
+          {
+            folder: `ancestorlens/cultural-memories/${folderId}`,
+            public_id: `audio-${folderId}`,
+            tags: ['cultural-memory', 'audio'],
+            context: { caption: 'Cultural memory audio' }
+          }
+        )
+        audioUrl = audioResult.secure_url
       }
     } else {
       // Not signed in: fallback to data URLs so the UI still works
@@ -118,7 +176,7 @@ export default function UploadMemoryPage() {
       location: formData.location || 'Unknown',
       category: formData.category,
       type: mediaType,
-      duration: mediaType === 'audio' ? '00:00' : undefined,
+      duration: mediaType === 'audio' ? 'unknown' : undefined,
       imageUrl,
       images: imagesData,
       audioUrl,

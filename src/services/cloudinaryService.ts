@@ -91,6 +91,72 @@ class CloudinaryService {
     }
   }
 
+  // Upload a single audio file (uses Cloudinary video endpoint for audio)
+  async uploadAudio(
+    file: File,
+    options: CloudinaryUploadOptions = {}
+  ): Promise<CloudinaryUploadResult> {
+    try {
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'm1_default'
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('upload_preset', uploadPreset)
+
+      if (options.folder) {
+        formData.append('folder', options.folder)
+      }
+
+      if (options.public_id) {
+        formData.append('public_id', options.public_id)
+      }
+
+      if (options.tags && options.tags.length > 0) {
+        formData.append('tags', options.tags.join(','))
+      }
+
+      if (options.context) {
+        const contextString = Object.entries(options.context)
+          .map(([key, value]) => `${key}=${value}`)
+          .join('|')
+        formData.append('context', contextString)
+      }
+
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Cloudinary audio upload error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          url: response.url
+        })
+        throw new Error(`Cloudinary audio upload failed: ${response.statusText} - ${errorText}`)
+      }
+
+      const result = await response.json()
+      return {
+        public_id: result.public_id,
+        secure_url: result.secure_url,
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        resource_type: result.resource_type,
+      }
+    } catch (error) {
+      console.error('Error uploading audio to Cloudinary:', error)
+      throw error
+    }
+  }
+
   // Upload multiple images
   async uploadMultipleImages(
     files: File[],
