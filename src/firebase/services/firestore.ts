@@ -50,13 +50,32 @@ export const firestoreService = {
   // Add a new document
   addDoc: async (collectionName: string, data: any) => {
     try {
+      console.log(`FirestoreService: Adding document to ${collectionName}`)
+      console.log('FirestoreService: Data:', data)
+      
+      // Clean data to remove undefined values
+      const cleanData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => value !== undefined)
+      )
+      
+      console.log('FirestoreService: Clean data:', cleanData)
+      
       const docRef = await addDoc(collection(db, collectionName), {
-        ...data,
+        ...cleanData,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       })
+      
+      console.log('FirestoreService: Document added with ID:', docRef.id)
       return docRef.id
     } catch (error) {
+      console.error(`FirestoreService: Error adding document to ${collectionName}:`, error)
+      console.error('FirestoreService: Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        collectionName,
+        data
+      })
       throw error
     }
   },

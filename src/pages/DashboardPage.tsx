@@ -47,7 +47,13 @@ const DashboardPage = () => {
     if (user?.uid) {
       setLoading(true)
       unsubscribe = activityService.onActivitiesChange(user.uid, (latestActivities: Activity[]) => {
-        setActivities(latestActivities)
+        // Sort activities by timestamp (newest first)
+        const sortedActivities = latestActivities.sort((a, b) => {
+          const timestampA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp)
+          const timestampB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp)
+          return timestampB.getTime() - timestampA.getTime() // Descending order (newest first)
+        })
+        setActivities(sortedActivities)
         setLoading(false)
       })
     } else {

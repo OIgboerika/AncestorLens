@@ -6,9 +6,10 @@ import LeafletMap from '../components/maps/LeafletMap'
 import '../styles/leaflet.css'
 import { useAuth } from '../contexts/AuthContext'
 import { activityService } from '../firebase/services/activityService'
+import { burialSiteService, BurialSite as FirestoreBurialSite } from '../firebase/services/burialSiteService'
 
 interface BurialSite {
-  id: number
+  id: string | number
   name: string
   deceasedName: string
   birthYear?: string
@@ -94,25 +95,109 @@ const BurialSitesPage = () => {
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isGettingLocation, setIsGettingLocation] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  // Load from localStorage and merge with defaults
+  // Load from Firestore and merge with defaults
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
-    if (saved.length > 0) {
-      const defaultIds = new Set(DEFAULT_SITES.map(s => s.id))
-      const onlyNew = saved.filter(s => !defaultIds.has(s.id))
-      setSites([...DEFAULT_SITES, ...onlyNew])
-    } else {
-      setSites(DEFAULT_SITES)
-    }
-  }, [])
+    const loadBurialSites = async () => {
+      if (!user?.uid) {
+        // Fallback to localStorage if no user
+        const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
+        if (saved.length > 0) {
+          const defaultIds = new Set(DEFAULT_SITES.map(s => s.id))
+          const onlyNew = saved.filter(s => !defaultIds.has(s.id))
+          setSites([...DEFAULT_SITES, ...onlyNew])
+        } else {
+          setSites(DEFAULT_SITES)
+        }
+        setLoading(false)
+        return
+      }
 
-  const stats = useMemo(() => ({
-    totalSites: sites.length,
-    visitsThisYear: sites.filter(s => (s.lastVisit || '').includes('2024')).length,
-    sitesWithPhotos: sites.filter(s => s.images && s.images.length > 0).length,
-    familyMembers: 4
-  }), [sites])
+      try {
+        // Load from Firestore
+        const firestoreSites = await burialSiteService.getBurialSites(user.uid)
+        
+        // Convert Firestore sites to local format
+        const convertedSites: BurialSite[] = firestoreSites.map(site => ({
+          id: site.id || Date.now().toString(),
+          name: site.name,
+          deceasedName: site.deceasedName,
+          birthYear: site.birthYear,
+          deathYear: site.deathYear,
+          location: site.location,
+          coordinates: site.coordinates,
+          description: site.description,
+          visitNotes: site.visitNotes,
+          lastVisit: site.lastVisit,
+          images: site.images,
+          familyAccess: site.familyAccess
+        }))
+
+        // Merge with default sites (only if Firestore is empty)
+        if (convertedSites.length === 0) {
+          setSites(DEFAULT_SITES)
+        } else {
+          setSites(convertedSites)
+        }
+      } catch (error) {
+        console.error('Error loading burial sites:', error)
+        // Fallback to localStorage
+        const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
+        if (saved.length > 0) {
+          const defaultIds = new Set(DEFAULT_SITES.map(s => s.id))
+          const onlyNew = saved.filter(s => !defaultIds.has(s.id))
+          setSites([...DEFAULT_SITES, ...onlyNew])
+        } else {
+          setSites(DEFAULT_SITES)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadBurialSites()
+  }, [user?.uid])
+
+  // Real-time updates from Firestore
+  useEffect(() => {
+    if (!user?.uid) return
+
+    const unsubscribe = burialSiteService.onBurialSitesChange(user.uid, (firestoreSites) => {
+      const convertedSites: BurialSite[] = firestoreSites.map(site => ({
+        id: site.id || Date.now().toString(),
+        name: site.name,
+        deceasedName: site.deceasedName,
+        birthYear: site.birthYear,
+        deathYear: site.deathYear,
+        location: site.location,
+        coordinates: site.coordinates,
+        description: site.description,
+        visitNotes: site.visitNotes,
+        lastVisit: site.lastVisit,
+        images: site.images,
+        familyAccess: site.familyAccess
+      }))
+      setSites(convertedSites)
+    })
+
+    return () => unsubscribe()
+  }, [user?.uid])
+
+  const stats = useMemo(() => {
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' })
+    const currentYear = new Date().getFullYear().toString()
+    
+    return {
+      totalSites: sites.length,
+      visitsThisYear: sites.filter(s => (s.lastVisit || '').includes('2024')).length,
+      sitesWithPhotos: sites.filter(s => s.images && s.images.length > 0).length,
+      sitesVisitedThisMonth: sites.filter(s => {
+        const lastVisit = s.lastVisit || ''
+        return lastVisit.includes(currentMonth) && lastVisit.includes(currentYear)
+      }).length
+    }
+  }, [sites])
 
   const filteredSites = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
@@ -193,12 +278,36 @@ const BurialSitesPage = () => {
     setUploadedImages(prev => [...prev, ...files])
   }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'))
+    setUploadedImages(prev => [...prev, ...files])
+  }
+
   const removeImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
+    setEditUploadedImages(prev => [...prev, ...files])
+  }
+
+  const handleEditDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleEditDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'))
     setEditUploadedImages(prev => [...prev, ...files])
   }
 
@@ -383,34 +492,63 @@ const BurialSitesPage = () => {
       alert('Please fill in Name, Deceased Name, and Location')
       return
     }
-    const imageUrls = await Promise.all(uploadedImages.map(fileToDataUrl))
-    const payload: BurialSite = {
-      id: Date.now(),
-      name: newSite.name!,
-      deceasedName: newSite.deceasedName!,
-      birthYear: newSite.birthYear || undefined,
-      deathYear: newSite.deathYear || undefined,
-      location: newSite.location!,
-      coordinates: newSite.coordinates || { lat: 0, lng: 0 },
-      description: newSite.description || undefined,
-      visitNotes: newSite.visitNotes || undefined,
-      lastVisit: newSite.lastVisit || undefined,
-      images: (newSite.images && newSite.images.length > 0) ? newSite.images : imageUrls
+    if (!user?.uid) {
+      alert('Please sign in to save burial sites')
+      return
     }
 
-    const existing = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
-    existing.push(payload)
-    localStorage.setItem('burialSites', JSON.stringify(existing))
+    try {
+      console.log('Starting burial site save process...')
+      console.log('User ID:', user.uid)
+      console.log('New site data:', newSite)
+      
+      const imageUrls = await Promise.all(uploadedImages.map(fileToDataUrl))
+      console.log('Image URLs processed:', imageUrls.length)
+      
+      // Prepare data for Firestore - strip undefined values
+      const siteData: Omit<FirestoreBurialSite, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+        name: newSite.name!,
+        deceasedName: newSite.deceasedName!,
+        location: newSite.location!,
+        coordinates: newSite.coordinates || { lat: 0, lng: 0 },
+        images: (newSite.images && newSite.images.length > 0) ? newSite.images : imageUrls,
+        familyAccess: []
+      }
 
-    // Log activity
-    if (user?.uid) {
-      activityService.logBurialSiteAdded(user.uid, payload.name, payload.id.toString())
+      // Only add optional fields if they have values
+      if (newSite.birthYear) siteData.birthYear = newSite.birthYear
+      if (newSite.deathYear) siteData.deathYear = newSite.deathYear
+      if (newSite.description) siteData.description = newSite.description
+      if (newSite.visitNotes) siteData.visitNotes = newSite.visitNotes
+      if (newSite.lastVisit) siteData.lastVisit = newSite.lastVisit
+
+      console.log('Prepared site data:', siteData)
+
+      // Save to Firestore
+      const siteId = await burialSiteService.addBurialSite(user.uid, siteData)
+      console.log('Burial site saved with ID:', siteId)
+
+      // Log activity
+      try {
+        await activityService.logBurialSiteAdded(user.uid, siteData.name, siteId)
+        console.log('Activity logged successfully')
+      } catch (activityError) {
+        console.warn('Failed to log activity:', activityError)
+        // Don't fail the whole operation if activity logging fails
+      }
+
+      // Reset form
+      setIsModalOpen(false)
+      setNewSite({ name: '', deceasedName: '', birthYear: '', deathYear: '', location: '', coordinates: { lat: 0, lng: 0 }, description: '', visitNotes: '', lastVisit: '', images: [] })
+      setUploadedImages([])
+
+      alert('Burial site saved successfully!')
+    } catch (error) {
+      console.error('Detailed error saving burial site:', error)
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+      alert(`Failed to save burial site: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
-
-    setSites(prev => [...prev, payload])
-    setIsModalOpen(false)
-    setNewSite({ name: '', deceasedName: '', birthYear: '', deathYear: '', location: '', coordinates: { lat: 0, lng: 0 }, description: '', visitNotes: '', lastVisit: '', images: [] })
-    setUploadedImages([])
   }
 
   const handleUpdateSite = async (e: React.FormEvent) => {
@@ -419,28 +557,54 @@ const BurialSitesPage = () => {
       alert('Please fill in Name, Deceased Name, and Location')
       return
     }
-    const newImageUrls = await Promise.all(editUploadedImages.map(fileToDataUrl))
-    const updated: BurialSite = {
-      id: Number(editSite.id),
-      name: editSite.name,
-      deceasedName: editSite.deceasedName,
-      birthYear: editSite.birthYear || undefined,
-      deathYear: editSite.deathYear || undefined,
-      location: editSite.location,
-      coordinates: editSite.coordinates || { lat: 0, lng: 0 },
-      description: editSite.description || undefined,
-      visitNotes: editSite.visitNotes || undefined,
-      lastVisit: editSite.lastVisit || undefined,
-      images: [...(editSite.images || []), ...newImageUrls]
+    if (!user?.uid) {
+      alert('Please sign in to update burial sites')
+      return
     }
 
-    const updatedSites = sites.map(s => s.id === updated.id ? updated : s)
-    setSites(updatedSites)
-    localStorage.setItem('burialSites', JSON.stringify(updatedSites.filter(s => !DEFAULT_SITES.some(ds => ds.id === s.id))))
+    try {
+      const newImageUrls = await Promise.all(editUploadedImages.map(fileToDataUrl))
+      
+      // Prepare updates for Firestore
+      const updates: Partial<FirestoreBurialSite> = {
+        name: editSite.name,
+        deceasedName: editSite.deceasedName,
+        birthYear: editSite.birthYear || undefined,
+        deathYear: editSite.deathYear || undefined,
+        location: editSite.location,
+        coordinates: editSite.coordinates || { lat: 0, lng: 0 },
+        description: editSite.description || undefined,
+        visitNotes: editSite.visitNotes || undefined,
+        lastVisit: editSite.lastVisit || undefined,
+        images: [...(editSite.images || []), ...newImageUrls]
+      }
 
-    setIsEditModalOpen(false)
-    setEditSite(null)
-    setEditUploadedImages([])
+      // Update in Firestore
+      await burialSiteService.updateBurialSite(editSite.id.toString(), updates)
+
+      // Reset form
+      setIsEditModalOpen(false)
+      setEditSite(null)
+      setEditUploadedImages([])
+
+      alert('Burial site updated successfully!')
+    } catch (error) {
+      console.error('Error updating burial site:', error)
+      alert('Failed to update burial site. Please try again.')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ancestor-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading burial sites...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -493,8 +657,8 @@ const BurialSitesPage = () => {
         <Card hoverable={false}>
           <div className="text-center">
             <Calendar className="w-8 h-8 text-ancestor-accent mx-auto mb-2" />
-            <p className="text-2xl font-bold text-ancestor-accent">{stats.familyMembers}</p>
-            <p className="text-sm text-gray-600">Family Members</p>
+            <p className="text-2xl font-bold text-ancestor-accent">{stats.sitesVisitedThisMonth}</p>
+            <p className="text-sm text-gray-600">Visited This Month</p>
           </div>
         </Card>
       </div>
@@ -642,15 +806,18 @@ const BurialSitesPage = () => {
                     <Button variant="outline" size="sm" onClick={() => openEditModal(site)}>
                       Edit
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => {
+                    <Button variant="outline" size="sm" onClick={async () => {
                       const visitDate = prompt('Enter visit date (e.g., March 15, 2024):')
-                      if (visitDate) {
-                        const updatedSites = sites.map(s => 
-                          s.id === site.id ? { ...s, lastVisit: visitDate } : s
-                        )
-                        setSites(updatedSites)
-                        localStorage.setItem('burialSites', JSON.stringify(updatedSites.filter(s => !DEFAULT_SITES.some(ds => ds.id === s.id))))
-                        alert('Visit recorded successfully!')
+                      if (visitDate && user?.uid) {
+                        try {
+                          await burialSiteService.updateVisit(site.id.toString(), visitDate)
+                          alert('Visit recorded successfully!')
+                        } catch (error) {
+                          console.error('Error updating visit:', error)
+                          alert('Failed to record visit. Please try again.')
+                        }
+                      } else if (!user?.uid) {
+                        alert('Please sign in to record visits')
                       }
                     }}>
                       Add Visit
@@ -788,10 +955,15 @@ const BurialSitesPage = () => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Photos</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <div 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors"
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                  >
                     <div className="text-center">
                       <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                       <p className="text-sm text-gray-600 mb-2">Upload photos of the burial site</p>
+                      <p className="text-xs text-gray-500 mb-3">Drag & drop images here or click the button below</p>
                       <input
                         type="file"
                         multiple
@@ -800,12 +972,15 @@ const BurialSitesPage = () => {
                         className="hidden"
                         id="image-upload"
                       />
-                      <label htmlFor="image-upload" className="cursor-pointer">
-                        <Button variant="outline" size="sm" type="button">
-                          <Upload className="w-4 h-4 mr-2" />
-                          Choose Photos
-                        </Button>
-                      </label>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        type="button"
+                        onClick={() => document.getElementById('image-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Choose Photos
+                      </Button>
                     </div>
                     {uploadedImages.length > 0 && (
                       <div className="mt-4">
@@ -1029,14 +1204,32 @@ const BurialSitesPage = () => {
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Photos</label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <div 
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors"
+                      onDragOver={handleEditDragOver}
+                      onDrop={handleEditDrop}
+                    >
                       <div className="text-center">
                         <Camera className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                         <p className="text-sm text-gray-600 mb-2">Upload additional photos</p>
-                        <input type="file" multiple accept="image/*" onChange={handleEditImageUpload} className="hidden" id="edit-image-upload" />
-                        <label htmlFor="edit-image-upload" className="cursor-pointer">
-                          <Button variant="outline" size="sm" type="button"><Upload className="w-4 h-4 mr-2" />Choose Photos</Button>
-                        </label>
+                        <p className="text-xs text-gray-500 mb-3">Drag & drop images here or click the button below</p>
+                        <input 
+                          type="file" 
+                          multiple 
+                          accept="image/*" 
+                          onChange={handleEditImageUpload} 
+                          className="hidden" 
+                          id="edit-image-upload" 
+                        />
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          type="button"
+                          onClick={() => document.getElementById('edit-image-upload')?.click()}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Choose Photos
+                        </Button>
                       </div>
                       {(editSite.images && editSite.images.length > 0) && (
                         <div className="mt-4">

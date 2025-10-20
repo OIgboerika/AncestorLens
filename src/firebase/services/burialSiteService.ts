@@ -24,8 +24,7 @@ export const burialSiteService = {
   getBurialSites: async (userId: string): Promise<BurialSite[]> => {
     try {
       const sites = await firestoreService.getDocs('burialSites', [
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
       ])
       return sites.map(convertTimestamps) as BurialSite[]
     } catch (error) {
@@ -48,13 +47,31 @@ export const burialSiteService = {
   // Add a new burial site
   addBurialSite: async (userId: string, siteData: Omit<BurialSite, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     try {
+      console.log('BurialSiteService: Adding burial site for user:', userId)
+      console.log('BurialSiteService: Site data:', siteData)
+      
+      // Strip undefined values to avoid Firestore errors
+      const cleanData = Object.fromEntries(
+        Object.entries(siteData).filter(([_, value]) => value !== undefined)
+      )
+      
+      console.log('BurialSiteService: Clean data:', cleanData)
+      
       const siteId = await firestoreService.addDoc('burialSites', {
-        ...siteData,
+        ...cleanData,
         userId,
       })
+      
+      console.log('BurialSiteService: Site added with ID:', siteId)
       return siteId
     } catch (error) {
-      console.error('Error adding burial site:', error)
+      console.error('BurialSiteService: Error adding burial site:', error)
+      console.error('BurialSiteService: Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        userId,
+        siteData
+      })
       throw error
     }
   },
@@ -62,7 +79,7 @@ export const burialSiteService = {
   // Update a burial site
   updateBurialSite: async (siteId: string, updates: Partial<BurialSite>): Promise<void> => {
     try {
-      await firestoreService.updateDoc('burialSites', siteId)
+      await firestoreService.updateDoc('burialSites', siteId, updates)
     } catch (error) {
       console.error('Error updating burial site:', error)
       throw error
@@ -100,8 +117,7 @@ export const burialSiteService = {
         .map(convertTimestamps) as BurialSite[]
       callback(sites)
     }, [
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', userId)
     ])
   },
 }
