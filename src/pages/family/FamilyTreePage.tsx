@@ -8,12 +8,15 @@ import {
   Calendar,
   ZoomIn,
   ZoomOut,
-  UserPlus
+  UserPlus,
+  Layout,
+  Move
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import { useAuth } from '../../contexts/AuthContext'
 import { familyService } from '../../firebase/services/familyService'
+import DraggableFamilyTree from '../../components/family/DraggableFamilyTree'
 
 interface FamilyMember {
   id: number | string
@@ -35,6 +38,7 @@ export default function FamilyTreePage() {
   const [showFilters, setShowFilters] = useState(false)
   const [scale, setScale] = useState(1)
   const [hideMock] = useState<boolean>(true)
+  const [viewMode, setViewMode] = useState<'static' | 'draggable'>('static')
   const [familyData, setFamilyData] = useState<{ grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }>({
     currentGeneration: [],
     parents: [],
@@ -297,37 +301,6 @@ export default function FamilyTreePage() {
     )
   }
 
-  // Helper function to determine if two members are siblings
-  const areSiblings = (member1: FamilyMember, member2: FamilyMember) => {
-    // Check if they have the same parentId
-    if (member1.parentId === member2.parentId && 
-        member1.parentId !== undefined && 
-        member1.id !== member2.id) {
-      return true
-    }
-    
-    // Also check if they are both children of the same parents (Father/Mother)
-    const allMembers = [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children]
-    const member1Parents = allMembers.filter(m => m.id === member1.parentId)
-    const member2Parents = allMembers.filter(m => m.id === member2.parentId)
-    
-    // If both have parents and those parents are married, they are siblings
-    if (member1Parents.length > 0 && member2Parents.length > 0) {
-      const parent1 = member1Parents[0]
-      const parent2 = member2Parents[0]
-      return areMarried(parent1, parent2)
-    }
-    
-    return false
-  }
-
-  // Helper function to get all children of a parent couple
-  const getChildrenOfParents = (parent1: FamilyMember, parent2: FamilyMember) => {
-    const allMembers = [...familyData.grandparents, ...familyData.parents, ...familyData.currentGeneration, ...familyData.children]
-    return allMembers.filter(member => 
-      member.parentId === parent1.id || member.parentId === parent2.id
-    )
-  }
 
   const Node = ({ member }: { member: FamilyMember }) => {
     const initials = member.name.split(' ').map(n => n[0]).join('')
@@ -384,6 +357,29 @@ export default function FamilyTreePage() {
             <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s - 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomOut className="w-4 h-4" /></Button>
             <Button variant="outline" onClick={() => setScale(s => clamp(parseFloat((s + 0.1).toFixed(2)), 0.5, 2))} className="px-2 py-2"><ZoomIn className="w-4 h-4" /></Button>
           </div>
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 mr-2">
+            <Button
+              variant={viewMode === 'static' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('static')}
+              className="px-3 py-1 text-xs"
+            >
+              <Layout className="w-3 h-3 mr-1" />
+              Static
+            </Button>
+            <Button
+              variant={viewMode === 'draggable' ? 'primary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('draggable')}
+              className="px-3 py-1 text-xs"
+            >
+              <Move className="w-3 h-3 mr-1" />
+              Draggable
+            </Button>
+          </div>
+          
         {/* Reset Tree removed as per request */}
           <Link to="/family-tree/builder">
             <Button className="flex items-center space-x-2">
@@ -453,10 +449,12 @@ export default function FamilyTreePage() {
       {/* Main content with right stats sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Tree Canvas */}
-        <Card className="lg:col-span-9 overflow-auto">
-          <div className="relative min-w-[600px] sm:min-w-[800px] lg:min-w-[900px] py-10">
-            {/* Zoomable content wrapper */}
-            <div className="origin-center" style={{ transform: `scale(${scale})` }}>
+        <Card className="lg:col-span-9">
+          {viewMode === 'static' ? (
+            <div className="overflow-auto">
+              <div className="relative min-w-[600px] sm:min-w-[800px] lg:min-w-[900px] py-10">
+                {/* Zoomable content wrapper */}
+                <div className="origin-center" style={{ transform: `scale(${scale})` }}>
               {/* Dynamic tree rendering with proper family connections */}
               
               {/* Grandparents Generation */}
@@ -588,23 +586,36 @@ export default function FamilyTreePage() {
                 </>
               )}
 
-              {/* Show message if no family members */}
-              {familyData.grandparents.length === 0 && 
-               familyData.parents.length === 0 && 
-               familyData.currentGeneration.length === 0 && 
-               familyData.children.length === 0 && (
-                <div className="text-center py-12">
-                  <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">No Family Members Yet</h3>
-                  <p className="text-gray-500 mb-4">Start building your family tree by adding your first family member.</p>
-                  <Button onClick={() => navigate('/family-tree/builder')}>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add First Family Member
-                  </Button>
+                  {/* Show message if no family members */}
+                  {familyData.grandparents.length === 0 && 
+                   familyData.parents.length === 0 && 
+                   familyData.currentGeneration.length === 0 && 
+                   familyData.children.length === 0 && (
+                    <div className="text-center py-12">
+                      <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-600 mb-2">No Family Members Yet</h3>
+                      <p className="text-gray-500 mb-4">Start building your family tree by adding your first family member.</p>
+                      <Button onClick={() => navigate('/family-tree/builder')}>
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Add First Family Member
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="p-4">
+              <DraggableFamilyTree 
+                familyData={familyData}
+                onLayoutChange={(nodes, edges) => {
+                  // Save layout changes to localStorage
+                  const layoutData = { nodes, edges, timestamp: Date.now() }
+                  localStorage.setItem('familyTreeLayout', JSON.stringify(layoutData))
+                }}
+              />
+            </div>
+          )}
         </Card>
 
         {/* Right sidebar stats */}

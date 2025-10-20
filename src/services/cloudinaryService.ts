@@ -221,7 +221,7 @@ class CloudinaryService {
   }
 
   // Delete an image (requires server-side implementation for security)
-  async deleteImage(publicId: string): Promise<void> {
+  async deleteImage(): Promise<void> {
     console.warn('Image deletion requires server-side implementation for security')
     // This would need to be implemented on your backend
   }

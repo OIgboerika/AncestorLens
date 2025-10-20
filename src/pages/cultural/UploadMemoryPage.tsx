@@ -18,7 +18,7 @@ export default function UploadMemoryPage() {
   const mediaStreamRef = useRef<MediaStream | null>(null)
   const recordedChunksRef = useRef<BlobPart[]>([])
   const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null)
-  const [audioError, setAudioError] = useState<string | null>(null)
+  const [, setAudioError] = useState<string | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [formData, setFormData] = useState({
     title: '',
