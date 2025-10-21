@@ -15,6 +15,7 @@ export interface BurialSite {
   lastVisit?: string
   images: string[]
   familyAccess?: string[]
+  visible?: boolean
   createdAt?: Date
   updatedAt?: Date
 }

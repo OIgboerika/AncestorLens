@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, MapPin, Calendar, Share2, Eye, X, Upload, Camera, Navigation, Trash2, AlertTriangle } from 'lucide-react'
+import { Plus, Search, MapPin, Calendar, Share2, Eye, EyeOff, X, Upload, Camera, Navigation, Trash2, AlertTriangle } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 import LeafletMap from '../components/maps/LeafletMap'
@@ -21,6 +21,7 @@ interface BurialSite {
   lastVisit?: string
   images: string[]
   familyAccess?: string[]
+  visible?: boolean
 }
 
 const DEFAULT_SITES: BurialSite[] = [
@@ -36,7 +37,8 @@ const DEFAULT_SITES: BurialSite[] = [
     visitNotes: 'Well maintained plot with a beautiful headstone',
     lastVisit: 'March 15, 2024',
     images: ['placeholder-headstone-1.jpg'],
-    familyAccess: ['John Doe', 'Grace Doe']
+    familyAccess: ['John Doe', 'Grace Doe'],
+    visible: true
   },
   {
     id: 2,
@@ -50,7 +52,8 @@ const DEFAULT_SITES: BurialSite[] = [
     visitNotes: 'Located in the eastern section of the cemetery',
     lastVisit: 'February 20, 2024',
     images: ['placeholder-headstone-2.jpg'],
-    familyAccess: ['John Doe', 'Michael Doe']
+    familyAccess: ['John Doe', 'Michael Doe'],
+    visible: true
   },
   {
     id: 3,
@@ -64,7 +67,8 @@ const DEFAULT_SITES: BurialSite[] = [
     visitNotes: 'Peaceful location with flowers',
     lastVisit: 'January 10, 2024',
     images: ['placeholder-headstone-3.jpg'],
-    familyAccess: ['John Doe', 'David Doe']
+    familyAccess: ['John Doe', 'David Doe'],
+    visible: true
   }
 ]
 
@@ -191,11 +195,13 @@ const BurialSitesPage = () => {
     const currentMonth = new Date().toLocaleString('default', { month: 'long' })
     const currentYear = new Date().getFullYear().toString()
     
+    const visibleSites = sites.filter(s => s.visible !== false)
+    
     return {
-      totalSites: sites.length,
-      visitsThisYear: sites.filter(s => (s.lastVisit || '').includes('2024')).length,
-      sitesWithPhotos: sites.filter(s => s.images && s.images.length > 0).length,
-      sitesVisitedThisMonth: sites.filter(s => {
+      totalSites: visibleSites.length,
+      visitsThisYear: visibleSites.filter(s => (s.lastVisit || '').includes('2024')).length,
+      sitesWithPhotos: visibleSites.filter(s => s.images && s.images.length > 0).length,
+      sitesVisitedThisMonth: visibleSites.filter(s => {
         const lastVisit = s.lastVisit || ''
         return lastVisit.includes(currentMonth) && lastVisit.includes(currentYear)
       }).length
@@ -204,10 +210,15 @@ const BurialSitesPage = () => {
 
   const filteredSites = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
-    if (!q) return sites
-    return sites.filter(s =>
-      [s.name, s.deceasedName, s.location].some(val => (val || '').toLowerCase().includes(q))
-    )
+    let filtered = sites.filter(s => s.visible !== false) // Only show visible sites
+    
+    if (q) {
+      filtered = filtered.filter(s =>
+        [s.name, s.deceasedName, s.location].some(val => (val || '').toLowerCase().includes(q))
+      )
+    }
+    
+    return filtered
   }, [searchTerm, sites])
 
   const openModal = () => setIsModalOpen(true)
@@ -263,6 +274,61 @@ const BurialSitesPage = () => {
   const openDeleteModal = (site: BurialSite) => {
     setSiteToDelete(site)
     setShowDeleteModal(true)
+  }
+
+  // Handle toggle burial site visibility
+  const toggleVisibility = async (site: BurialSite) => {
+    try {
+      const updatedSites = sites.map(s => 
+        s.id === site.id ? { ...s, visible: !s.visible } : s
+      )
+      setSites(updatedSites)
+      
+      // Save to localStorage
+      localStorage.setItem('burialSites', JSON.stringify(updatedSites))
+      
+      // Update Firestore if signed in and site has string ID
+      if (user?.uid && typeof site.id === 'string') {
+        await burialSiteService.updateBurialSite(site.id, { visible: !site.visible } as Partial<FirestoreBurialSite>)
+      }
+    } catch (error) {
+      console.error('Error toggling visibility:', error)
+      alert('Failed to update visibility. Please try again.')
+    }
+  }
+
+  // Handle share burial site
+  const handleShareSite = async (site: BurialSite) => {
+    try {
+      const shareData = {
+        title: `${site.name} - ${site.deceasedName}`,
+        text: `${site.description || 'Burial site information'}\n\nLocation: ${site.location}\nCoordinates: ${site.coordinates.lat.toFixed(4)}°N, ${site.coordinates.lng.toFixed(4)}°E`,
+        url: window.location.href
+      }
+
+      // Check if Web Share API is supported
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback: copy to clipboard
+        const shareText = `${site.name} - ${site.deceasedName}\n\n${site.description || 'Burial site information'}\n\nLocation: ${site.location}\nCoordinates: ${site.coordinates.lat.toFixed(4)}°N, ${site.coordinates.lng.toFixed(4)}°E\n\n${window.location.href}`
+        await navigator.clipboard.writeText(shareText)
+        alert('Burial site details copied to clipboard!')
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        console.error('Error sharing burial site:', error)
+        // Fallback: copy to clipboard
+        try {
+          const shareText = `${site.name} - ${site.deceasedName}\n\n${site.description || 'Burial site information'}\n\nLocation: ${site.location}\nCoordinates: ${site.coordinates.lat.toFixed(4)}°N, ${site.coordinates.lng.toFixed(4)}°E\n\n${window.location.href}`
+          await navigator.clipboard.writeText(shareText)
+          alert('Burial site details copied to clipboard!')
+        } catch (clipboardError) {
+          console.error('Clipboard error:', clipboardError)
+          alert('Failed to share burial site. Please try again.')
+        }
+      }
+    }
   }
 
   const handleNewSiteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -548,8 +614,9 @@ const BurialSitesPage = () => {
         location: newSite.location!,
         coordinates: newSite.coordinates || { lat: 0, lng: 0 },
         images: (newSite.images && newSite.images.length > 0) ? newSite.images : imageUrls,
-        familyAccess: []
-      }
+        familyAccess: [],
+        visible: true
+      } as Omit<FirestoreBurialSite, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
 
       // Only add optional fields if they have values
       if (newSite.birthYear) siteData.birthYear = newSite.birthYear
@@ -790,10 +857,22 @@ const BurialSitesPage = () => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="w-4 h-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => toggleVisibility(site)}
+                    >
+                      {site.visible !== false ? (
+                        <Eye className="w-4 h-4" />
+                      ) : (
+                        <EyeOff className="w-4 h-4" />
+                      )}
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleShareSite(site)}
+                    >
                       <Share2 className="w-4 h-4" />
                     </Button>
                   </div>
