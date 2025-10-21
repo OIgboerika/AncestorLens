@@ -9,7 +9,8 @@ import {
   MapPin,
   Shield,
   Settings,
-  Share2
+  Share2,
+  RefreshCw
 } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
@@ -18,10 +19,15 @@ import { updateProfile } from 'firebase/auth'
 import { auth } from '../firebase/config'
 import { userProfileService } from '../firebase/services/userProfileService'
 import { activityService } from '../firebase/services/activityService'
+import { familyService } from '../firebase/services/familyService'
+import { culturalMemoryService } from '../firebase/services/culturalMemoryService'
+import { burialSiteService } from '../firebase/services/burialSiteService'
 
 export default function ProfilePage() {
   const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [userData, setUserData] = useState({
     name: '',
     email: '',
@@ -32,6 +38,60 @@ export default function ProfilePage() {
     profileImage: '',
     familyStats: { familyMembers: 0, memoriesUploaded: 0, burialSites: 0, profileViews: 0 }
   })
+
+  // Load real-time metrics
+  const loadRealTimeMetrics = async (userId: string) => {
+    try {
+      // Load data from all services in parallel
+      const [familyMembers, culturalMemories, burialSites] = await Promise.all([
+        familyService.getFamilyMembers(userId).catch(() => []),
+        culturalMemoryService.getCulturalMemories(userId).catch(() => []),
+        burialSiteService.getBurialSites(userId).catch(() => [])
+      ])
+
+      // Also check localStorage for offline data
+      const localFamilyMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+      const localCulturalMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+      const localBurialSites = JSON.parse(localStorage.getItem('burialSites') || '[]')
+
+      // Combine Firestore and localStorage data, removing duplicates
+      const allFamilyMembers = [...familyMembers, ...localFamilyMembers.filter((local: any) => 
+        !familyMembers.some(firestore => firestore.id === local.id)
+      )]
+      
+      const allCulturalMemories = [...culturalMemories, ...localCulturalMemories.filter((local: any) => 
+        !culturalMemories.some(firestore => firestore.id === local.id)
+      )]
+      
+      const allBurialSites = [...burialSites, ...localBurialSites.filter((local: any) => 
+        !burialSites.some(firestore => firestore.id === local.id)
+      )]
+
+      // Update family stats with real data
+      setUserData(prev => ({
+        ...prev,
+        familyStats: {
+          familyMembers: allFamilyMembers.length,
+          memoriesUploaded: allCulturalMemories.length,
+          burialSites: allBurialSites.length,
+          profileViews: prev.familyStats.profileViews // Keep existing profile views
+        }
+      }))
+    } catch (error) {
+      console.error('Error loading real-time metrics:', error)
+    }
+  }
+
+  // Manual refresh function
+  const handleRefreshMetrics = async () => {
+    if (!user) return
+    setRefreshing(true)
+    try {
+      await loadRealTimeMetrics(user.uid)
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   // Load user profile data from Firestore
   useEffect(() => {
@@ -63,6 +123,9 @@ export default function ProfilePage() {
               profileImage: profile.photoURL || prev.profileImage,
             }))
           }
+
+          // Load real-time metrics
+          await loadRealTimeMetrics(user.uid)
         } catch (error) {
           console.error('Error loading user profile:', error)
         }
@@ -72,12 +135,25 @@ export default function ProfilePage() {
     loadUserProfile()
   }, [user])
 
+  // Refresh metrics when page becomes visible (user returns from other pages)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user) {
+        loadRealTimeMetrics(user.uid)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setUserData(prev => ({ ...prev, [name]: value }))
   }
 
   const handleSave = async () => {
+    setSaving(true)
     try {
       if (auth.currentUser && user) {
         // Update Firebase Auth profile
@@ -107,6 +183,8 @@ export default function ProfilePage() {
       console.error('Error updating profile:', error)
       // Still exit edit mode even if update fails
       setIsEditing(false)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -146,7 +224,10 @@ export default function ProfilePage() {
             {!isEditing ? (
               <Button variant="outline" className="flex items-center gap-2" onClick={() => setIsEditing(true)}><Edit className="w-4 h-4" /> Edit Profile</Button>
             ) : (
-              <Button className="flex items-center gap-2" onClick={handleSave}><Save className="w-4 h-4" /> Save Changes</Button>
+              <Button className="flex items-center gap-2" onClick={handleSave} disabled={saving}>
+                <Save className="w-4 h-4" /> 
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
             )}
             <Button variant="outline" className="flex items-center gap-2"><Share2 className="w-4 h-4" /> Share</Button>
           </div>
@@ -240,7 +321,11 @@ export default function ProfilePage() {
             <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Quick Actions</h3>
             <div className="space-y-3">
               <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = '/privacy-settings'}><Shield className="w-4 h-4 mr-3" /> Privacy Settings</Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => alert('Account Settings coming soon!')}><Settings className="w-4 h-4 mr-3" /> Account Settings</Button>
+              <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = '/account-settings'}><Settings className="w-4 h-4 mr-3" /> Account Settings</Button>
+              <Button variant="outline" className="w-full justify-start" onClick={handleRefreshMetrics} disabled={refreshing}>
+                <RefreshCw className={`w-4 h-4 mr-3 ${refreshing ? 'animate-spin' : ''}`} /> 
+                {refreshing ? 'Refreshing...' : 'Refresh Metrics'}
+              </Button>
               <Button variant="outline" className="w-full justify-start" onClick={() => {
                 navigator.clipboard.writeText(window.location.href)
                 alert('Profile link copied to clipboard!')

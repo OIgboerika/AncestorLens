@@ -64,6 +64,12 @@ const Navbar = () => {
                 >
                   Privacy Settings
                 </Link>
+                <Link
+                  to="/account-settings"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Account Settings
+                </Link>
               </div>
             </div>
 

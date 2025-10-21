@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Search, MapPin, Calendar, Share2, Eye, X, Upload, Camera, Navigation } from 'lucide-react'
+import { Plus, Search, MapPin, Calendar, Share2, Eye, X, Upload, Camera, Navigation, Trash2, AlertTriangle } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 import LeafletMap from '../components/maps/LeafletMap'
@@ -96,6 +96,9 @@ const BurialSitesPage = () => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isGettingLocation, setIsGettingLocation] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [siteToDelete, setSiteToDelete] = useState<BurialSite | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Load from Firestore and merge with defaults
   useEffect(() => {
@@ -227,6 +230,39 @@ const BurialSitesPage = () => {
     setIsEditModalOpen(false)
     setEditSite(null)
     setEditUploadedImages([])
+  }
+
+  // Handle delete burial site
+  const handleDeleteSite = async () => {
+    if (!siteToDelete || !user?.uid) return
+    
+    setDeleting(true)
+    try {
+      // Delete from Firestore if signed in
+      if (typeof siteToDelete.id === 'string') {
+        await burialSiteService.deleteBurialSite(siteToDelete.id)
+      }
+      
+      // Remove from local state and localStorage
+      const updatedSites = sites.filter(s => s.id !== siteToDelete.id)
+      setSites(updatedSites)
+      localStorage.setItem('burialSites', JSON.stringify(updatedSites))
+      
+      // Close modal
+      setShowDeleteModal(false)
+      setSiteToDelete(null)
+    } catch (error) {
+      console.error('Error deleting burial site:', error)
+      alert('Failed to delete burial site. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  // Open delete confirmation modal
+  const openDeleteModal = (site: BurialSite) => {
+    setSiteToDelete(site)
+    setShowDeleteModal(true)
   }
 
   const handleNewSiteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -822,6 +858,15 @@ const BurialSitesPage = () => {
                     }}>
                       Add Visit
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
+                      onClick={() => openDeleteModal(site)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1278,6 +1323,51 @@ const BurialSitesPage = () => {
                   <Button type="submit">Save Changes</Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && siteToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Burial Site</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete <strong>"{siteToDelete.name}"</strong>? 
+                This will permanently remove the burial site from your collection.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setSiteToDelete(null)
+                }}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="outline"
+                className="bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700"
+                onClick={handleDeleteSite}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete Site'}
+              </Button>
             </div>
           </div>
         </div>

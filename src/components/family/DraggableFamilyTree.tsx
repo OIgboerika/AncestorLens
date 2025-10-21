@@ -8,9 +8,10 @@ import ReactFlow, {
   useEdgesState,
   Controls,
   Background,
-  MiniMap,
   NodeTypes,
   ConnectionMode,
+  Handle,
+  Position,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { useAuth } from '../../contexts/AuthContext'
@@ -35,7 +36,7 @@ interface FamilyMemberNodeProps {
   }
 }
 
-// Custom Family Member Node Component
+// Custom Family Member Node Component with Connection Handles
 const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = ({ data }) => {
   const { member } = data
   const initials = member.name.split(' ').map(n => n[0]).join('')
@@ -50,7 +51,7 @@ const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = ({ data }) => {
       : member.role
 
   return (
-    <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-4 min-w-[200px]">
+    <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-4 min-w-[200px] relative">
       {/* Crown icon for tree creator */}
       {isCreator && (
         <div className="absolute -top-2 -right-1 z-10 bg-yellow-400 rounded-full p-1 shadow-lg">
@@ -59,6 +60,122 @@ const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = ({ data }) => {
           </svg>
         </div>
       )}
+      
+      {/* Connection Handles on all four sides - Green source handles */}
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        style={{ 
+          background: '#059669', 
+          width: 14, 
+          height: 14, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 20
+        }}
+        className="hover:scale-110 transition-transform"
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        style={{ 
+          background: '#059669', 
+          width: 14, 
+          height: 14, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 20
+        }}
+        className="hover:scale-110 transition-transform"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        style={{ 
+          background: '#059669', 
+          width: 14, 
+          height: 14, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 20
+        }}
+        className="hover:scale-110 transition-transform"
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        style={{ 
+          background: '#059669', 
+          width: 14, 
+          height: 14, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 20
+        }}
+        className="hover:scale-110 transition-transform"
+      />
+      
+      {/* Target handles for incoming connections - Red target handles */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top-target"
+        style={{ 
+          background: '#DC2626', 
+          width: 10, 
+          height: 10, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 10
+        }}
+        className="hover:scale-110 transition-transform"
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="right-target"
+        style={{ 
+          background: '#DC2626', 
+          width: 10, 
+          height: 10, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 10
+        }}
+        className="hover:scale-110 transition-transform"
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="bottom-target"
+        style={{ 
+          background: '#DC2626', 
+          width: 10, 
+          height: 10, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 10
+        }}
+        className="hover:scale-110 transition-transform"
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left-target"
+        style={{ 
+          background: '#DC2626', 
+          width: 10, 
+          height: 10, 
+          border: '2px solid white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          zIndex: 10
+        }}
+        className="hover:scale-110 transition-transform"
+      />
       
       <div className="flex items-center space-x-3">
         <div className={`w-12 h-12 rounded-full ring-2 ${ringColor} ring-offset-2 overflow-hidden bg-gray-200 flex items-center justify-center flex-shrink-0`}
@@ -75,8 +192,96 @@ const FamilyMemberNode: React.FC<FamilyMemberNodeProps> = ({ data }) => {
   )
 }
 
+// Custom Edge Component with Midpoint Connection Nodes
+const CustomEdge: React.FC<any> = ({ id, sourceX, sourceY, targetX, targetY, style = {} }) => {
+  const edgePath = `M ${sourceX} ${sourceY} L ${targetX} ${targetY}`
+  const midX = (sourceX + targetX) / 2
+  const midY = (sourceY + targetY) / 2
+
+  return (
+    <>
+      <path
+        id={id}
+        style={style}
+        className="react-flow__edge-path"
+        d={edgePath}
+        markerEnd="url(#react-flow__arrowclosed)"
+      />
+      {/* Midpoint connection node */}
+      <g>
+        <circle
+          cx={midX}
+          cy={midY}
+          r="8"
+          fill="#8B5CF6"
+          stroke="white"
+          strokeWidth="2"
+          style={{ cursor: 'pointer' }}
+          className="hover:scale-110 transition-transform"
+        />
+        <Handle
+          type="source"
+          position={Position.Top}
+          id={`${id}-mid-top`}
+          style={{
+            background: '#8B5CF6',
+            width: 8,
+            height: 8,
+            border: '1px solid white',
+            left: midX - 4,
+            top: midY - 12,
+          }}
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id={`${id}-mid-bottom`}
+          style={{
+            background: '#8B5CF6',
+            width: 8,
+            height: 8,
+            border: '1px solid white',
+            left: midX - 4,
+            top: midY + 4,
+          }}
+        />
+        <Handle
+          type="target"
+          position={Position.Top}
+          id={`${id}-mid-top-target`}
+          style={{
+            background: '#DC2626',
+            width: 8,
+            height: 8,
+            border: '1px solid white',
+            left: midX - 4,
+            top: midY - 12,
+          }}
+        />
+        <Handle
+          type="target"
+          position={Position.Bottom}
+          id={`${id}-mid-bottom-target`}
+          style={{
+            background: '#DC2626',
+            width: 8,
+            height: 8,
+            border: '1px solid white',
+            left: midX - 4,
+            top: midY + 4,
+          }}
+        />
+      </g>
+    </>
+  )
+}
+
 const nodeTypes: NodeTypes = {
   familyMember: FamilyMemberNode,
+}
+
+const edgeTypes = {
+  custom: CustomEdge,
 }
 
 interface DraggableFamilyTreeProps {
@@ -101,6 +306,7 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
       if (savedLayout) {
         const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedLayout)
         if (savedNodes && savedEdges) {
+          console.log('Loaded saved layout:', { savedNodes, savedEdges }) // Debug log
           return { savedNodes, savedEdges }
         }
       }
@@ -141,9 +347,9 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
         draggable: true,
       }
     })
-  }, [familyData, loadSavedLayout])
+  }, [familyData.grandparents.length, familyData.parents.length, familyData.currentGeneration.length, familyData.children.length, loadSavedLayout])
 
-  // Create edges based on family relationships and saved manual connections
+  // Create edges based only on saved manual connections
   const familyEdges = useMemo(() => {
     const edges: Edge[] = []
     const allMembers = [
@@ -153,86 +359,13 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
       ...familyData.children
     ]
 
-    // Load saved manual connections
+    // Load saved manual connections only
     const savedLayout = loadSavedLayout()
     const savedManualEdges = savedLayout?.savedEdges?.filter((edge: any) => 
       edge.id?.startsWith('manual-')
     ) || []
 
-    // Helper function to determine if two members are married
-    const areMarried = (member1: FamilyMember, member2: FamilyMember) => {
-      const marriagePairs = [
-        ['Father', 'Mother'],
-        ['Grandfather', 'Grandmother'],
-        ['Paternal Grandfather', 'Paternal Grandmother'],
-        ['Maternal Grandfather', 'Maternal Grandmother'],
-        ['Husband', 'Wife'],
-        ['Self', 'Spouse'],
-        ['Self', 'Partner']
-      ]
-      
-      return marriagePairs.some(pair => 
-        (pair.includes(member1.relationship) && pair.includes(member2.relationship)) ||
-        (member1.relationship === 'Self' && ['Husband', 'Wife', 'Spouse', 'Partner'].includes(member2.relationship)) ||
-        (member2.relationship === 'Self' && ['Husband', 'Wife', 'Spouse', 'Partner'].includes(member1.relationship))
-      )
-    }
-
-    // Helper function to determine if two members are siblings
-    const areSiblings = (member1: FamilyMember, member2: FamilyMember) => {
-      return member1.parentId === member2.parentId && 
-             member1.parentId !== undefined && 
-             member1.id !== member2.id
-    }
-
-    // Create edges for marriages
-    allMembers.forEach((member1, index1) => {
-      allMembers.forEach((member2, index2) => {
-        if (index1 < index2) {
-          if (areMarried(member1, member2)) {
-            edges.push({
-              id: `marriage-${member1.id}-${member2.id}`,
-              source: member1.id.toString(),
-              target: member2.id.toString(),
-              type: 'smoothstep',
-              style: { stroke: '#374151', strokeWidth: 2 },
-              label: 'Married',
-              labelStyle: { fontSize: 12, fill: '#374151' },
-            })
-          } else if (areSiblings(member1, member2)) {
-            edges.push({
-              id: `sibling-${member1.id}-${member2.id}`,
-              source: member1.id.toString(),
-              target: member2.id.toString(),
-              type: 'smoothstep',
-              style: { stroke: '#6B7280', strokeWidth: 1.5, strokeDasharray: '5,5' },
-              label: 'Siblings',
-              labelStyle: { fontSize: 12, fill: '#6B7280' },
-            })
-          }
-        }
-      })
-    })
-
-    // Create parent-child edges
-    allMembers.forEach((child) => {
-      if (child.parentId) {
-        const parent = allMembers.find(p => p.id === child.parentId)
-        if (parent) {
-          edges.push({
-            id: `parent-child-${parent.id}-${child.id}`,
-            source: parent.id.toString(),
-            target: child.id.toString(),
-            type: 'smoothstep',
-            style: { stroke: '#059669', strokeWidth: 2 },
-            label: 'Child',
-            labelStyle: { fontSize: 12, fill: '#059669' },
-          })
-        }
-      }
-    })
-
-    // Add saved manual connections
+    // Add only saved manual connections
     savedManualEdges.forEach((edge: any) => {
       // Check if both source and target nodes still exist
       const sourceExists = allMembers.some(m => m.id.toString() === edge.source)
@@ -241,6 +374,7 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
       if (sourceExists && targetExists) {
         edges.push({
           ...edge,
+          type: 'custom',
           style: { stroke: '#DC2626', strokeWidth: 2 },
           label: 'Manual',
           labelStyle: { fontSize: 12, fill: '#DC2626' },
@@ -249,13 +383,46 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
     })
 
     return edges
-  }, [familyData, loadSavedLayout])
+  }, [familyData.grandparents.length, familyData.parents.length, familyData.currentGeneration.length, familyData.children.length, loadSavedLayout])
 
-  // Initialize nodes and edges
+  // Initialize nodes and edges, preserving saved layout and handling new members
   useEffect(() => {
-    setNodes(familyNodes)
-    setEdges(familyEdges)
-  }, [familyNodes, familyEdges, setNodes, setEdges])
+    const savedLayout = loadSavedLayout()
+    
+    if (savedLayout && savedLayout.savedNodes && savedLayout.savedEdges) {
+      // Merge saved layout with current family data
+      const currentMemberIds = new Set([
+        ...familyData.grandparents,
+        ...familyData.parents,
+        ...familyData.currentGeneration,
+        ...familyData.children
+      ].map(m => m.id.toString()))
+      
+      // Filter saved nodes to only include current members
+      const validSavedNodes = savedLayout.savedNodes.filter((node: any) => 
+        currentMemberIds.has(node.id)
+      )
+      
+      // Add new members with default positions
+      const savedNodeIds = new Set(validSavedNodes.map((n: any) => n.id))
+      const newNodes = familyNodes.filter(node => !savedNodeIds.has(node.id))
+      
+      // Combine saved and new nodes
+      const mergedNodes = [...validSavedNodes, ...newNodes]
+      
+      // Filter saved edges to only include current members
+      const validSavedEdges = savedLayout.savedEdges.filter((edge: any) => 
+        currentMemberIds.has(edge.source) && currentMemberIds.has(edge.target)
+      )
+      
+      setNodes(mergedNodes)
+      setEdges(validSavedEdges)
+    } else {
+      // Use computed layout for first time
+      setNodes(familyNodes)
+      setEdges(familyEdges)
+    }
+  }, [familyData.grandparents.length, familyData.parents.length, familyData.currentGeneration.length, familyData.children.length]) // Re-run when member count changes
 
   // Save layout to localStorage immediately
   const saveLayout = useCallback((currentNodes: Node[], currentEdges: Edge[]) => {
@@ -266,6 +433,7 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
         timestamp: Date.now() 
       }
       localStorage.setItem('familyTreeLayout', JSON.stringify(layoutData))
+      console.log('Layout saved:', layoutData) // Debug log
       
       if (onLayoutChange) {
         onLayoutChange(currentNodes, currentEdges)
@@ -280,7 +448,7 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
     const newEdge = {
       ...params,
       id: `manual-${params.source}-${params.target}`,
-      type: 'smoothstep',
+      type: 'custom',
       style: { stroke: '#DC2626', strokeWidth: 2 },
       label: 'Manual',
       labelStyle: { fontSize: 12, fill: '#DC2626' },
@@ -304,12 +472,22 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
     }
   }, [nodes, edges, saveLayout])
 
+  // Save layout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (nodes.length > 0 || edges.length > 0) {
+        saveLayout(nodes, edges)
+      }
+    }
+  }, [nodes, edges, saveLayout])
+
   return (
     <div className="w-full h-[600px] border border-gray-200 rounded-lg">
       <div className="mb-2 p-2 bg-gray-50 rounded-t-lg border-b">
         <p className="text-sm text-gray-600">
           <strong>Instructions:</strong> Drag family members to rearrange them. 
-          Click and drag from one member to another to draw custom connection lines.
+          Use the larger green connection nodes to draw custom relationship lines between members. 
+          Purple nodes on existing lines allow branching connections.
         </p>
       </div>
       <ReactFlow
@@ -319,6 +497,7 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         attributionPosition="bottom-left"
         connectionMode={ConnectionMode.Loose}
@@ -326,14 +505,6 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
         snapGrid={[15, 15]}
       >
         <Controls />
-        <MiniMap 
-          nodeColor={(node) => {
-            const member = node.data?.member as FamilyMember
-            return member?.role === 'Living' ? '#10B981' : '#6B7280'
-          }}
-          nodeStrokeWidth={3}
-          nodeBorderRadius={2}
-        />
         <Background color="#f9fafb" gap={20} />
       </ReactFlow>
     </div>

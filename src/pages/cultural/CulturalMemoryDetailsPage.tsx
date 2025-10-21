@@ -1,5 +1,5 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Play, Pause, Share2, Download, Calendar, Clock, User, MapPin, Volume2, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, Play, Pause, Share2, Download, Calendar, Clock, User, MapPin, Volume2, Image as ImageIcon, Trash2, AlertTriangle } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import { useMemo, useState, useRef, useEffect } from 'react'
@@ -35,6 +35,8 @@ export default function CulturalMemoryDetailsPage() {
   const memoryFromState = state?.memory as MemoryItem | undefined
   const [memory, setMemory] = useState<MemoryItem | undefined>(memoryFromState)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Load from Firestore if navigated directly
   React.useEffect(() => {
@@ -57,6 +59,119 @@ export default function CulturalMemoryDetailsPage() {
   // Gallery state for images
   const images = useMemo(() => memory?.images || (memory?.imageUrl ? [memory.imageUrl] : []), [memory])
   const [currentIdx, setCurrentIdx] = useState(0)
+
+  // Handle download memory
+  const handleDownload = async () => {
+    if (!memory) return
+
+    try {
+      if (memory.type === 'audio' && memory.audioUrl) {
+        // Download audio file
+        const response = await fetch(memory.audioUrl)
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${memory.title}.${memory.audioUrl.split('.').pop() || 'mp3'}`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      } else if (memory.type === 'image') {
+        // Download image(s)
+        const images = memory.images || (memory.imageUrl ? [memory.imageUrl] : [])
+        if (images.length === 1) {
+          // Single image download
+          const response = await fetch(images[0])
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${memory.title}.${images[0].split('.').pop() || 'jpg'}`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+        } else if (images.length > 1) {
+          // Multiple images - download as ZIP (simplified approach: download current image)
+          const currentImage = images[currentIdx]
+          const response = await fetch(currentImage)
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${memory.title}_${currentIdx + 1}.${currentImage.split('.').pop() || 'jpg'}`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading memory:', error)
+      alert('Failed to download memory. Please try again.')
+    }
+  }
+
+  // Handle share memory
+  const handleShare = async () => {
+    if (!memory) return
+
+    try {
+      const shareData = {
+        title: memory.title,
+        text: memory.description,
+        url: window.location.href
+      }
+
+      // Check if Web Share API is supported
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(`${memory.title}\n\n${memory.description}\n\n${window.location.href}`)
+        alert('Memory details copied to clipboard!')
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        console.error('Error sharing memory:', error)
+        // Fallback: copy to clipboard
+        try {
+          await navigator.clipboard.writeText(`${memory.title}\n\n${memory.description}\n\n${window.location.href}`)
+          alert('Memory details copied to clipboard!')
+        } catch (clipboardError) {
+          console.error('Clipboard error:', clipboardError)
+          alert('Failed to share memory. Please try again.')
+        }
+      }
+    }
+  }
+
+  // Handle delete memory
+  const handleDeleteMemory = async () => {
+    if (!memory || !user?.uid) return
+    
+    setDeleting(true)
+    try {
+      // Delete from Firestore if signed in
+      if (typeof memory.id === 'string') {
+        await culturalMemoryService.deleteCulturalMemory(memory.id)
+      }
+      
+      // Remove from localStorage
+      const existingMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+      const updatedMemories = existingMemories.filter((m: MemoryItem) => m.id !== memory.id)
+      localStorage.setItem('culturalMemories', JSON.stringify(updatedMemories))
+      
+      // Navigate back to memories list
+      navigate('/cultural-memories')
+    } catch (error) {
+      console.error('Error deleting memory:', error)
+      alert('Failed to delete memory. Please try again.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   if (!memory) {
     // Fallback minimal UI if navigated directly without state
@@ -116,8 +231,19 @@ export default function CulturalMemoryDetailsPage() {
               <p className="text-gray-600 mt-2">{memory.description}</p>
 
               <div className="mt-4 flex items-center gap-2">
-                <Button className="flex items-center gap-2"><Download className="w-4 h-4" /> Download</Button>
-                <Button variant="outline" className="flex items-center gap-2"><Share2 className="w-4 h-4" /> Share</Button>
+                <Button className="flex items-center gap-2" onClick={handleDownload}>
+                  <Download className="w-4 h-4" /> Download
+                </Button>
+                <Button variant="outline" className="flex items-center gap-2" onClick={handleShare}>
+                  <Share2 className="w-4 h-4" /> Share
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400"
+                  onClick={() => setShowDeleteModal(true)}
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </Button>
               </div>
             </div>
           </Card>
@@ -173,6 +299,48 @@ export default function CulturalMemoryDetailsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Memory</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete <strong>"{memory.title}"</strong>? 
+                This will permanently remove the memory from your collection.
+              </p>
+            </div>
+            
+            <div className="flex gap-3 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="outline"
+                className="bg-red-600 text-white border-red-600 hover:bg-red-700 hover:border-red-700"
+                onClick={handleDeleteMemory}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete Memory'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

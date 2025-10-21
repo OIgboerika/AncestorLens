@@ -1,9 +1,11 @@
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
-import { Shield, Users, Globe } from 'lucide-react'
-import { useState } from 'react'
+import { Shield, Users, Globe, Database } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function PrivacySettingsPage() {
+  const { user } = useAuth()
   const [settings, setSettings] = useState({
     profileVisibility: 'family',
     familyTreeAccess: 'family',
@@ -17,6 +19,36 @@ export default function PrivacySettingsPage() {
     allowResearch: false,
     allowThirdParty: false,
   })
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('privacySettings')
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings)
+        setSettings(parsed)
+      } catch (error) {
+        console.warn('Failed to load saved privacy settings:', error)
+      }
+    }
+  }, [])
+
+  // Save settings to localStorage
+  const saveSettings = async () => {
+    setSaving(true)
+    try {
+      localStorage.setItem('privacySettings', JSON.stringify(settings))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000) // Hide success message after 2 seconds
+    } catch (error) {
+      console.error('Failed to save privacy settings:', error)
+      alert('Failed to save settings. Please try again.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const setVis = (key: 'profileVisibility'|'familyTreeAccess'|'burialSitesAccess'|'memoriesAccess', value: string) => setSettings(s => ({ ...s, [key]: value }))
 
@@ -60,7 +92,7 @@ export default function PrivacySettingsPage() {
       </Card>
 
       <Card className="mb-6">
-        <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Data Access Control</h2>
+        <div className="flex items-center mb-6"><Database className="w-5 h-5 text-ancestor-primary mr-3" /><h2 className="text-xl font-semibold text-ancestor-dark">Data Access Control</h2></div>
         <div className="space-y-6">
           <RadioRow title="Family Tree Access" desc="Who can view your family tree and member information" icon={Users} value={settings.familyTreeAccess} onChange={(v)=>setVis('familyTreeAccess', v)} />
           <RadioRow title="Burial Sites Access" desc="Who can see mapped burial sites" icon={Globe} value={settings.burialSitesAccess} onChange={(v)=>setVis('burialSitesAccess', v)} />
@@ -88,7 +120,13 @@ export default function PrivacySettingsPage() {
       </Card>
 
       <div className="flex justify-end">
-        <Button className="px-8">Save Changes</Button>
+        <Button 
+          className="px-8" 
+          onClick={saveSettings}
+          disabled={saving}
+        >
+          {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+        </Button>
       </div>
     </div>
   )

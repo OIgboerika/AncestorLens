@@ -11,6 +11,7 @@ import CulturalMemoryDetailsPage from './pages/cultural/CulturalMemoryDetailsPag
 import UploadMemoryPage from './pages/cultural/UploadMemoryPage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacySettingsPage from './pages/PrivacySettingsPage'
+import AccountSettingsPage from './pages/AccountSettingsPage'
 import LoginPage from './pages/auth/LoginPage'
 import SignUpPage from './pages/auth/SignUpPage'
 
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/upload-memory" element={<UploadMemoryPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/privacy-settings" element={<PrivacySettingsPage />} />
+          <Route path="/account-settings" element={<AccountSettingsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
