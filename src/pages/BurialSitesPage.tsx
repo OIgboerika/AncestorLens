@@ -138,7 +138,8 @@ const BurialSitesPage = () => {
           visitNotes: site.visitNotes,
           lastVisit: site.lastVisit,
           images: site.images,
-          familyAccess: site.familyAccess
+          familyAccess: site.familyAccess,
+          visible: site.visible !== undefined ? site.visible : true
         }))
 
         // Merge with default sites (only if Firestore is empty)
@@ -166,42 +167,61 @@ const BurialSitesPage = () => {
     loadBurialSites()
   }, [user?.uid])
 
-  // Real-time updates from Firestore
+  // Real-time updates from Firestore - DISABLED to prevent flashing
   useEffect(() => {
     if (!user?.uid) return
 
-    const unsubscribe = burialSiteService.onBurialSitesChange(user.uid, (firestoreSites) => {
-      const convertedSites: BurialSite[] = firestoreSites.map(site => ({
-        id: site.id || Date.now().toString(),
-        name: site.name,
-        deceasedName: site.deceasedName,
-        birthYear: site.birthYear,
-        deathYear: site.deathYear,
-        location: site.location,
-        coordinates: site.coordinates,
-        description: site.description,
-        visitNotes: site.visitNotes,
-        lastVisit: site.lastVisit,
-        images: site.images,
-        familyAccess: site.familyAccess
-      }))
-      setSites(convertedSites)
-    })
+    // Temporarily disable real-time updates to prevent flashing
+    // const unsubscribe = burialSiteService.onBurialSitesChange(user.uid, (firestoreSites) => {
+    //   const convertedSites: BurialSite[] = firestoreSites.map(site => ({
+    //     id: site.id || Date.now().toString(),
+    //     name: site.name,
+    //     deceasedName: site.deceasedName,
+    //     birthYear: site.birthYear,
+    //     deathYear: site.deathYear,
+    //     location: site.location,
+    //     coordinates: site.coordinates,
+    //     description: site.description,
+    //     visitNotes: site.visitNotes,
+    //     lastVisit: site.lastVisit,
+    //     images: site.images,
+    //     familyAccess: site.familyAccess,
+    //     visible: site.visible !== undefined ? site.visible : true
+    //   }))
+      
+    //   // Only update if we don't have local changes, or merge carefully
+    //   if (!hasLocalChanges) {
+    //     setSites(convertedSites)
+    //   } else {
+    //     // Merge with existing local state to preserve visibility changes
+    //     setSites(prevSites => {
+    //       const mergedSites = convertedSites.map(firestoreSite => {
+    //         const localSite = prevSites.find(s => s.id === firestoreSite.id)
+    //         return {
+    //           ...firestoreSite,
+    //           visible: localSite?.visible !== undefined ? localSite.visible : firestoreSite.visible
+    //         }
+    //       })
+    //       return mergedSites
+    //     })
+    //   }
+    // })
 
-    return () => unsubscribe()
+    // return () => unsubscribe()
   }, [user?.uid])
 
   const stats = useMemo(() => {
     const currentMonth = new Date().toLocaleString('default', { month: 'long' })
     const currentYear = new Date().getFullYear().toString()
     
-    const visibleSites = sites.filter(s => s.visible !== false)
+    // Count all sites regardless of visibility
+    const allSites = sites
     
     return {
-      totalSites: visibleSites.length,
-      visitsThisYear: visibleSites.filter(s => (s.lastVisit || '').includes('2024')).length,
-      sitesWithPhotos: visibleSites.filter(s => s.images && s.images.length > 0).length,
-      sitesVisitedThisMonth: visibleSites.filter(s => {
+      totalSites: allSites.length,
+      visitsThisYear: allSites.filter(s => (s.lastVisit || '').includes('2024')).length,
+      sitesWithPhotos: allSites.filter(s => s.images && s.images.length > 0).length,
+      sitesVisitedThisMonth: allSites.filter(s => {
         const lastVisit = s.lastVisit || ''
         return lastVisit.includes(currentMonth) && lastVisit.includes(currentYear)
       }).length
@@ -210,7 +230,8 @@ const BurialSitesPage = () => {
 
   const filteredSites = useMemo(() => {
     const q = searchTerm.trim().toLowerCase()
-    let filtered = sites.filter(s => s.visible !== false) // Only show visible sites
+    // Show all sites regardless of visibility - we'll handle visibility with blur overlay
+    let filtered = sites
     
     if (q) {
       filtered = filtered.filter(s =>
@@ -279,8 +300,12 @@ const BurialSitesPage = () => {
   // Handle toggle burial site visibility
   const toggleVisibility = async (site: BurialSite) => {
     try {
+      // Handle undefined visible property - treat undefined as true (visible)
+      const currentVisible = site.visible !== undefined ? site.visible : true
+      const newVisible = !currentVisible
+      
       const updatedSites = sites.map(s => 
-        s.id === site.id ? { ...s, visible: !s.visible } : s
+        s.id === site.id ? { ...s, visible: newVisible } : s
       )
       setSites(updatedSites)
       
@@ -289,7 +314,7 @@ const BurialSitesPage = () => {
       
       // Update Firestore if signed in and site has string ID
       if (user?.uid && typeof site.id === 'string') {
-        await burialSiteService.updateBurialSite(site.id, { visible: !site.visible } as Partial<FirestoreBurialSite>)
+        await burialSiteService.updateBurialSite(site.id, { visible: newVisible } as Partial<FirestoreBurialSite>)
       }
     } catch (error) {
       console.error('Error toggling visibility:', error)
@@ -766,21 +791,6 @@ const BurialSitesPage = () => {
         </Card>
       </div>
 
-      {/* Search */}
-      <Card className="mb-8">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search burial sites..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
-            />
-          </div>
-        </div>
-      </Card>
 
 
       {/* Map or List View */}
@@ -827,9 +837,38 @@ const BurialSitesPage = () => {
 
           {/* Burial Sites List */}
           <div className="space-y-6">
-        {filteredSites.map((site) => (
-          <Card key={site.id} className="hover:shadow-lg transition-shadow">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {filteredSites.map((site) => {
+          const isVisible = site.visible !== undefined ? site.visible : true
+          return (
+            <Card key={site.id} className="hover:shadow-lg transition-shadow relative">
+              {/* Eye icon - positioned above blur overlay */}
+              <div className="absolute top-4 right-4 z-20">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => toggleVisibility(site)}
+                  className="bg-white/90 hover:bg-white shadow-sm"
+                >
+                  {isVisible ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <EyeOff className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+
+              {/* Blur overlay for hidden sites */}
+              {!isVisible && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <EyeOff className="w-8 h-8 mx-auto mb-2 text-gray-500" />
+                    <p className="text-gray-600 font-medium">Site Hidden</p>
+                    <p className="text-sm text-gray-500">Click the eye icon to show</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${!isVisible ? 'blur-sm' : ''}`}>
               {/* Site Image */}
               <div className="lg:col-span-1">
                 <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
@@ -857,17 +896,6 @@ const BurialSitesPage = () => {
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => toggleVisibility(site)}
-                    >
-                      {site.visible !== false ? (
-                        <Eye className="w-4 h-4" />
-                      ) : (
-                        <EyeOff className="w-4 h-4" />
-                      )}
-                    </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
@@ -950,8 +978,9 @@ const BurialSitesPage = () => {
                 </div>
               </div>
             </div>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
       </div>
 
       {/* Empty State */}

@@ -1,5 +1,5 @@
 import { firestoreService, convertTimestamps } from './firestore'
-import { where, orderBy } from 'firebase/firestore'
+import { where } from 'firebase/firestore'
 
 export interface BurialSite {
   id?: string
