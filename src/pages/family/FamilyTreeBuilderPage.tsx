@@ -27,6 +27,9 @@ const FamilyTreeBuilderPage = () => {
     birthPlace: '',
     deathPlace: '',
     currentLocation: '',
+    city: '',
+    state: '',
+    country: '',
     coordinates: { lat: 0, lng: 0 },
     occupation: '',
     email: '',
@@ -125,6 +128,9 @@ const FamilyTreeBuilderPage = () => {
       birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
       deathYear: formData.deathDate ? new Date(formData.deathDate).getFullYear().toString() : '',
       location: formData.currentLocation || formData.birthPlace || 'Unknown',
+      city: formData.city,
+      state: formData.state,
+      country: formData.country,
       coordinates: formData.coordinates,
       image: undefined as string | undefined
     }
@@ -151,6 +157,9 @@ const FamilyTreeBuilderPage = () => {
           birthPlace: formData.birthPlace || undefined,
           deathPlace: formData.deathPlace || undefined,
           location: payload.location || undefined,
+          city: payload.city || undefined,
+          state: payload.state || undefined,
+          country: payload.country || undefined,
           coordinates: payload.coordinates || undefined,
           relationship: formData.relationship,
           gender: formData.gender || undefined,
@@ -421,6 +430,42 @@ const FamilyTreeBuilderPage = () => {
                 Use Current Location
               </Button>
             </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <Input
+              label="City"
+              name="city"
+              value={formData.city}
+              onChange={handleInputChange}
+              placeholder="Enter city"
+            />
+            
+            <Input
+              label="State/Province"
+              name="state"
+              value={formData.state}
+              onChange={handleInputChange}
+              placeholder="Enter state or province"
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <Input
+              label="Country"
+              name="country"
+              value={formData.country}
+              onChange={handleInputChange}
+              placeholder="Enter country"
+            />
+            
+            <Input
+              label="Street Address (Optional)"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              placeholder="Enter street address"
+            />
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">

@@ -15,6 +15,10 @@ interface FamilyMember {
   name: string
   role: 'Living' | 'Deceased'
   location?: string
+  city?: string
+  state?: string
+  country?: string
+  address?: string
   coordinates?: { lat: number; lng: number }
   relationship: string
   birthYear?: string
@@ -57,11 +61,19 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         const marker = L.marker([member.coordinates.lat, member.coordinates.lng])
         
         // Create popup content
+        const locationParts = []
+        if (member.address) locationParts.push(member.address)
+        if (member.city) locationParts.push(member.city)
+        if (member.state) locationParts.push(member.state)
+        if (member.country) locationParts.push(member.country)
+        
+        const fullLocation = locationParts.length > 0 ? locationParts.join(', ') : member.location || 'Location not specified'
+        
         const popupContent = `
           <div class="p-2">
             <h3 class="font-semibold text-lg">${member.name}</h3>
             <p class="text-sm text-gray-600">${member.relationship}</p>
-            ${member.location ? `<p class="text-sm text-gray-500">📍 ${member.location}</p>` : ''}
+            <p class="text-sm text-gray-500">📍 ${fullLocation}</p>
             ${member.birthYear ? `<p class="text-sm text-gray-500">Born: ${member.birthYear}</p>` : ''}
           </div>
         `

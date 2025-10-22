@@ -6,15 +6,14 @@ import {
   Camera,
   Save,
   Share2,
-  Calendar,
   MapPin,
   Phone,
   Mail
 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
-import { useAuth } from '../../contexts/AuthContext'
 import { familyService } from '../../firebase/services/familyService'
+import { geocodingService } from '../../services/geocodingService'
 
 interface MemberDetails {
   id: number
@@ -24,10 +23,15 @@ interface MemberDetails {
   deathYear?: string
   birthPlace?: string
   deathPlace?: string
+  location?: string
+  city?: string
+  state?: string
+  country?: string
+  address?: string
+  coordinates?: { lat: number; lng: number }
   occupation?: string
   email?: string
   phone?: string
-  address?: string
   bio?: string
   profileImage?: string | null
   image?: string | null
@@ -65,9 +69,10 @@ const FamilyMemberDetailsPage = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation() as { state?: { member?: MemberDetails } }
-  const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [memberData, setMemberData] = useState<MemberDetails>(MOCK_MEMBER)
+  const [isGeocoding, setIsGeocoding] = useState(false)
+  const [geocodingError, setGeocodingError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Load member from navigation state, then localStorage, else mock
@@ -117,6 +122,70 @@ const FamilyMemberDetailsPage = () => {
     }
   }
 
+  // Geocoding functions
+  const handleGeocodeAddress = async () => {
+    const address = geocodingService.buildAddressString(
+      memberData.city,
+      memberData.state,
+      memberData.country,
+      memberData.address
+    )
+
+    if (!address.trim()) {
+      setGeocodingError('Please enter at least one location field (city, state, country, or address)')
+      return
+    }
+
+    setIsGeocoding(true)
+    setGeocodingError(null)
+
+    try {
+      const coordinates = await geocodingService.geocodeAddress(address)
+      
+      if (coordinates) {
+        setMemberData(prev => ({
+          ...prev,
+          coordinates,
+          location: address // Update the general location field
+        }))
+        setGeocodingError(null)
+      } else {
+        setGeocodingError('Could not find coordinates for this address. Please try a more specific location.')
+      }
+    } catch (error) {
+      setGeocodingError('Failed to get coordinates. Please check your internet connection and try again.')
+    } finally {
+      setIsGeocoding(false)
+    }
+  }
+
+  const handleUseCurrentLocation = async () => {
+    setIsGeocoding(true)
+    setGeocodingError(null)
+
+    try {
+      const coordinates = await geocodingService.getCurrentLocation()
+      
+      if (coordinates) {
+        // Get address from coordinates
+        const address = await geocodingService.reverseGeocode(coordinates.lat, coordinates.lng)
+        
+        setMemberData(prev => ({
+          ...prev,
+          coordinates,
+          location: address || 'Current Location'
+        }))
+        setGeocodingError(null)
+      } else {
+        setGeocodingError('Could not get your current location. Please check your browser permissions.')
+      }
+    } catch (error) {
+      setGeocodingError('Failed to get current location. Please check your browser permissions.')
+    } finally {
+      setIsGeocoding(false)
+    }
+  }
+
   const handleSave = async () => {
     try {
       // Update Firestore if we have an id string (Firestore doc id pattern)
@@ -128,10 +197,15 @@ const FamilyMemberDetailsPage = () => {
           deathYear: memberData.deathYear,
           birthPlace: memberData.birthPlace,
           deathPlace: memberData.deathPlace,
+          location: memberData.location,
+          city: memberData.city,
+          state: memberData.state,
+          country: memberData.country,
+          address: memberData.address,
+          coordinates: memberData.coordinates,
           occupation: memberData.occupation,
           email: memberData.email,
           phone: memberData.phone,
-          address: memberData.address,
           bio: memberData.bio,
           image: memberData.image || memberData.profileImage || undefined,
           heritageTags: memberData.heritageTags || [],
@@ -369,6 +443,24 @@ const FamilyMemberDetailsPage = () => {
                   </div>
                 )}
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Location</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="location"
+                    value={memberData.location || ''}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="Enter current city, country"
+                  />
+                ) : (
+                  <div className="flex items-center text-gray-900">
+                    <MapPin className="w-4 h-4 mr-2 text-gray-400" />
+                    {memberData.location || '—'}
+                  </div>
+                )}
+              </div>
               {memberData.deathYear && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Death Year</label>
@@ -376,6 +468,178 @@ const FamilyMemberDetailsPage = () => {
                 </div>
               )}
             </div>
+          </Card>
+
+          {/* Detailed Location Information */}
+          <Card className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Location</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="city"
+                    value={memberData.city || ''}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="Enter city"
+                  />
+                ) : (
+                  <p className="text-gray-900">{memberData.city || '—'}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="state"
+                    value={memberData.state || ''}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="Enter state or province"
+                  />
+                ) : (
+                  <p className="text-gray-900">{memberData.state || '—'}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="country"
+                    value={memberData.country || ''}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="Enter country"
+                  />
+                ) : (
+                  <p className="text-gray-900">{memberData.country || '—'}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="address"
+                    value={memberData.address || ''}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="Enter street address (optional)"
+                  />
+                ) : (
+                  <p className="text-gray-900">{memberData.address || '—'}</p>
+                )}
+              </div>
+            </div>
+            
+            {isEditing && (
+              <div className="mt-4 space-y-3">
+                <div className="flex space-x-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGeocodeAddress}
+                    disabled={isGeocoding}
+                    className="flex-1"
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    {isGeocoding ? 'Getting Coordinates...' : 'Get Coordinates from Address'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isGeocoding}
+                    className="flex-1"
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    {isGeocoding ? 'Getting Location...' : 'Use Current Location'}
+                  </Button>
+                </div>
+                
+                {geocodingError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{geocodingError}</p>
+                  </div>
+                )}
+                
+                {memberData.coordinates && memberData.coordinates.lat !== 0 && memberData.coordinates.lng !== 0 && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-sm text-green-600">
+                      ✓ Coordinates found: {memberData.coordinates.lat.toFixed(6)}, {memberData.coordinates.lng.toFixed(6)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
+          {/* Location Coordinates */}
+          <Card className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Location Coordinates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    step="any"
+                    name="coordinates.lat"
+                    value={memberData.coordinates?.lat || ''}
+                    onChange={(e) => {
+                      const lat = parseFloat(e.target.value) || 0
+                      setMemberData(prev => ({
+                        ...prev,
+                        coordinates: { ...(prev.coordinates || { lat: 0, lng: 0 }), lat }
+                      }))
+                    }}
+                    className="input-field"
+                    placeholder="Enter latitude"
+                  />
+                ) : (
+                  <p className="text-gray-900">{memberData.coordinates?.lat || '—'}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
+                {isEditing ? (
+                  <input
+                    type="number"
+                    step="any"
+                    name="coordinates.lng"
+                    value={memberData.coordinates?.lng || ''}
+                    onChange={(e) => {
+                      const lng = parseFloat(e.target.value) || 0
+                      setMemberData(prev => ({
+                        ...prev,
+                        coordinates: { ...(prev.coordinates || { lat: 0, lng: 0 }), lng }
+                      }))
+                    }}
+                    className="input-field"
+                    placeholder="Enter longitude"
+                  />
+                ) : (
+                  <p className="text-gray-900">{memberData.coordinates?.lng || '—'}</p>
+                )}
+              </div>
+            </div>
+            {isEditing && (
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {/* TODO: Get current location */}}
+                  className="w-full"
+                >
+                  <MapPin className="w-4 h-4 mr-2" />
+                  Use Current Location
+                </Button>
+              </div>
+            )}
           </Card>
 
           {/* Contact Information */}
