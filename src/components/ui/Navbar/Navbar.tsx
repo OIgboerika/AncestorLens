@@ -20,9 +20,11 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-ancestor-primary rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">𝔘</span>
-              </div>
+              <img 
+                src="/images/logo.png" 
+                alt="AncestorLens Logo" 
+                className="w-12 h-12 object-contain"
+              />
               <span className="font-bold text-xl text-ancestor-primary">AncestorLens</span>
             </Link>
           </div>

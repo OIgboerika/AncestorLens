@@ -36,9 +36,11 @@ export default function Sidebar() {
       <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-40 hidden md:flex md:flex-col">
       <div className="h-16 px-4 flex items-center border-b border-gray-200">
         <Link to="/dashboard" className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-ancestor-primary rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">𝔘</span>
-          </div>
+          <img 
+            src="/images/logo.png" 
+            alt="AncestorLens Logo" 
+            className="w-12 h-12 object-contain"
+          />
           <span className="font-bold text-lg text-ancestor-primary">AncestorLens</span>
         </Link>
       </div>
@@ -61,9 +63,6 @@ export default function Sidebar() {
           )
         })}
       </nav>
-      <div className="px-4 py-4 border-t border-gray-200 text-xs text-gray-500">
-        © 2024 AncestorLens
-      </div>
     </aside>
 
     {/* Mobile sidebar */}
@@ -72,9 +71,11 @@ export default function Sidebar() {
     }`}>
       <div className="h-16 px-4 flex items-center justify-between border-b border-gray-200">
         <Link to="/dashboard" className="flex items-center space-x-2" onClick={() => setIsMobileMenuOpen(false)}>
-          <div className="w-8 h-8 bg-ancestor-primary rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">𝔘</span>
-          </div>
+          <img 
+            src="/images/logo.png" 
+            alt="AncestorLens Logo" 
+            className="w-12 h-12 object-contain"
+          />
           <span className="font-bold text-lg text-ancestor-primary">AncestorLens</span>
         </Link>
         <button
@@ -104,9 +105,6 @@ export default function Sidebar() {
           )
         })}
       </nav>
-      <div className="px-4 py-4 border-t border-gray-200 text-xs text-gray-500">
-        © 2024 AncestorLens
-      </div>
     </aside>
     </>
   )

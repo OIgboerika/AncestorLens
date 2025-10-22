@@ -62,7 +62,11 @@ const SignUpPage = () => {
       <div className="bg-ancestor-light/40 flex items-center justify-center px-8 py-12">
         <div className="max-w-xl">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-8 h-8 bg-ancestor-primary rounded-full flex items-center justify-center text-white font-bold">✱</div>
+            <img 
+              src="/images/logo.png" 
+              alt="AncestorLens Logo" 
+              className="w-12 h-12 object-contain"
+            />
             <span className="text-3xl font-extrabold text-ancestor-dark">AncestorLens</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold text-ancestor-dark leading-tight">Preserve your family’s legacy.</h1>

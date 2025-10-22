@@ -8,9 +8,11 @@ const Footer = () => {
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-ancestor-accent rounded-full flex items-center justify-center">
-                <span className="text-ancestor-dark font-bold text-lg">𝔘</span>
-              </div>
+              <img 
+                src="/images/logo.png" 
+                alt="AncestorLens Logo" 
+                className="w-12 h-12 object-contain"
+              />
               <span className="font-bold text-xl">AncestorLens</span>
             </div>
             <p className="text-gray-300 mb-4 max-w-md">
@@ -42,7 +44,6 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 AncestorLens. Preserving African Heritage.</p>
         </div>
       </div>
     </footer>
