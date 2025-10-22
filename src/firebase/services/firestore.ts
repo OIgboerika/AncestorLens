@@ -7,13 +7,12 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where,
-  orderBy,
-  limit,
   onSnapshot,
   Timestamp,
   DocumentData,
   QuerySnapshot,
+  Query,
+  CollectionReference,
 } from 'firebase/firestore'
 import { db } from '../config'
 
@@ -36,7 +35,7 @@ export const firestoreService = {
   // Get all documents from a collection
   getDocs: async (collectionName: string, constraints?: any[]) => {
     try {
-      let q = collection(db, collectionName)
+      let q: CollectionReference<DocumentData> | Query<DocumentData> = collection(db, collectionName)
       if (constraints) {
         q = query(q, ...constraints)
       }
@@ -109,7 +108,7 @@ export const firestoreService = {
     callback: (docs: any[]) => void,
     constraints?: any[]
   ) => {
-    let q = collection(db, collectionName)
+    let q: CollectionReference<DocumentData> | Query<DocumentData> = collection(db, collectionName)
     if (constraints) {
       q = query(q, ...constraints)
     }

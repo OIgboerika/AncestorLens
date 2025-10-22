@@ -2,10 +2,8 @@ import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 import { Shield, Users, Globe, Database } from 'lucide-react'
 import { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
 
 export default function PrivacySettingsPage() {
-  const { user } = useAuth()
   const [settings, setSettings] = useState({
     profileVisibility: 'family',
     familyTreeAccess: 'family',

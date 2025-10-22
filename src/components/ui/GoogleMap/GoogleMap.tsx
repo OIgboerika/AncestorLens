@@ -122,7 +122,7 @@ const MapComponent: React.FC<{
   return <div ref={ref} className="w-full h-full" />
 }
 
-const render = (status: Status) => {
+const render = (status: Status): JSX.Element => {
   switch (status) {
     case Status.LOADING:
       return (
@@ -146,7 +146,7 @@ const render = (status: Status) => {
         </div>
       )
     case Status.SUCCESS:
-      return null
+      return <div />
   }
 }
 

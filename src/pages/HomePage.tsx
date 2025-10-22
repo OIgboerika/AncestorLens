@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, Users, MapPin, Microphone } from 'lucide-react'
+import { ArrowRight, Users, MapPin, Mic } from 'lucide-react'
 import Button from '../components/ui/Button/Button'
 
 const HomePage = () => {
@@ -66,7 +66,7 @@ const HomePage = () => {
             
             <div className="text-center">
               <div className="w-16 h-16 bg-ancestor-accent rounded-full flex items-center justify-center mx-auto mb-4">
-                <Microphone className="w-8 h-8 text-ancestor-dark" />
+                <Mic className="w-8 h-8 text-ancestor-dark" />
               </div>
               <h3 className="text-xl font-semibold text-ancestor-dark mb-2">Oral Stories</h3>
               <p className="text-gray-600">

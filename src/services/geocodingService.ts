@@ -34,8 +34,8 @@ export const geocodingService = {
       
       const result = data[0]
       return {
-        lat: parseFloat(result.lat),
-        lng: parseFloat(result.lng)
+        lat: typeof result.lat === 'string' ? parseFloat(result.lat) : result.lat,
+        lng: typeof result.lng === 'string' ? parseFloat(result.lng) : result.lng
       }
     } catch (error) {
       console.error('Geocoding error:', error)

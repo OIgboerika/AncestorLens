@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { User, Mail, Lock, Smartphone, Trash2, AlertTriangle } from 'lucide-react'
+import { User, Lock, Trash2, AlertTriangle } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import Button from '../components/ui/Button/Button'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function AccountSettingsPage() {
-  const { user, logout } = useAuth()
+  const { user, signOut } = useAuth()
   const [accountData, setAccountData] = useState({
     displayName: user?.displayName || '',
     email: user?.email || '',
@@ -67,7 +67,7 @@ export default function AccountSettingsPage() {
       localStorage.removeItem('familyTreeLayout')
       
       alert('Account deletion initiated. You will be logged out.')
-      logout()
+      signOut()
     } catch (error) {
       console.error('Failed to delete account:', error)
       alert('Failed to delete account. Please try again.')
