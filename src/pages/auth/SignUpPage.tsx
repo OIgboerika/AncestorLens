@@ -68,7 +68,11 @@ const SignUpPage = () => {
           <h1 className="text-4xl md:text-5xl font-extrabold text-ancestor-dark leading-tight">Preserve your family’s legacy.</h1>
           <p className="mt-4 text-gray-600 max-w-md">Connect with your heritage through storytelling and shared memories.</p>
           <div className="mt-8 rounded-xl overflow-hidden border border-gray-200 bg-white">
-            <img src="https://images.unsplash.com/photo-1580136579312-94651dfd596d?q=80&w=1400&auto=format&fit=crop" alt="family" className="w-full h-72 object-cover" />
+            <img 
+              src="/images/auth.jpg" 
+              alt="African family celebrating together" 
+              className="w-full h-72 object-cover" 
+            />
           </div>
         </div>
       </div>

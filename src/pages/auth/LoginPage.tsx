@@ -57,7 +57,11 @@ const LoginPage = () => {
           <h1 className="text-4xl md:text-5xl font-extrabold text-ancestor-dark leading-tight">Welcome Back to AncestorLens.</h1>
           <p className="mt-4 text-gray-600 max-w-md">Continue exploring your family's rich heritage and stories.</p>
           <div className="mt-8 rounded-xl overflow-hidden border border-gray-200 bg-white">
-            <img src="https://images.unsplash.com/photo-1619963258839-c72a9f9d9e20?q=80&w=1400&auto=format&fit=crop" alt="storytelling" className="w-full h-72 object-cover" />
+            <img 
+              src="/images/auth.jpg" 
+              alt="African family sharing stories and heritage" 
+              className="w-full h-72 object-cover" 
+            />
           </div>
         </div>
       </div>

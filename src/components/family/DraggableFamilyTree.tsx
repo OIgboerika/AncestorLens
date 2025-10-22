@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useEffect } from 'react'
+import React, { useCallback, useMemo, useEffect, useState } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -298,153 +298,203 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
   useAuth()
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   // Load saved layout from localStorage
   const loadSavedLayout = useCallback(() => {
     try {
       const savedLayout = localStorage.getItem('familyTreeLayout')
       if (savedLayout) {
-        const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedLayout)
-        if (savedNodes && savedEdges) {
-          console.log('Loaded saved layout:', { savedNodes, savedEdges }) // Debug log
-          return { savedNodes, savedEdges }
+        const parsed = JSON.parse(savedLayout)
+        
+        // Handle the new ultra-simple format
+        if (parsed.positions && parsed.connections) {
+          console.log('Loaded saved layout:', parsed)
+          return { 
+            savedNodes: parsed.positions.map((pos: any) => ({
+              id: pos.id,
+              position: { x: pos.x, y: pos.y }
+            })), 
+            savedEdges: parsed.connections.map((conn: any) => ({
+              id: `manual-${conn.from}-${conn.to}`,
+              source: conn.from,
+              target: conn.to,
+              type: 'custom'
+            }))
+          }
+        }
+        
+        // Handle old formats for backward compatibility
+        if (parsed.nodes || parsed.savedNodes) {
+          const nodes = parsed.nodes || parsed.savedNodes || []
+          const edges = parsed.edges || parsed.savedEdges || []
+          
+          return { 
+            savedNodes: nodes.map((node: any) => ({
+              id: node.id,
+              position: node.position || { x: node.x || 0, y: node.y || 0 }
+            })), 
+            savedEdges: edges 
+          }
         }
       }
     } catch (error) {
       console.warn('Failed to load saved layout:', error)
+      // Clear corrupted data
+      localStorage.removeItem('familyTreeLayout')
     }
     return null
   }, [])
 
-  // Convert family members to React Flow nodes with saved positions
-  const familyNodes = useMemo(() => {
-    const allMembers = [
-      ...familyData.grandparents,
-      ...familyData.parents,
-      ...familyData.currentGeneration,
-      ...familyData.children
-    ]
+  // Get all family members
+  const allMembers = useMemo(() => [
+    ...familyData.grandparents,
+    ...familyData.parents,
+    ...familyData.currentGeneration,
+    ...familyData.children
+  ], [familyData.grandparents, familyData.parents, familyData.currentGeneration, familyData.children])
 
-    // Try to load saved layout
-    const savedLayout = loadSavedLayout()
-    const savedNodePositions = savedLayout?.savedNodes?.reduce((acc: any, node: any) => {
-      acc[node.id] = node.position
-      return acc
-    }, {}) || {}
-
-    return allMembers.map((member, index) => {
-      const memberId = member.id.toString()
-      const savedPosition = savedNodePositions[memberId]
-      
-      return {
-        id: memberId,
-        type: 'familyMember',
-        position: savedPosition || {
-          x: (index % 4) * 250 + 50,
-          y: Math.floor(index / 4) * 200 + 50,
-        },
-        data: { member },
-        draggable: true,
-      }
-    })
-  }, [familyData.grandparents.length, familyData.parents.length, familyData.currentGeneration.length, familyData.children.length, loadSavedLayout])
-
-  // Create edges based only on saved manual connections
-  const familyEdges = useMemo(() => {
-    const edges: Edge[] = []
-    const allMembers = [
-      ...familyData.grandparents,
-      ...familyData.parents,
-      ...familyData.currentGeneration,
-      ...familyData.children
-    ]
-
-    // Load saved manual connections only
-    const savedLayout = loadSavedLayout()
-    const savedManualEdges = savedLayout?.savedEdges?.filter((edge: any) => 
-      edge.id?.startsWith('manual-')
-    ) || []
-
-    // Add only saved manual connections
-    savedManualEdges.forEach((edge: any) => {
-      // Check if both source and target nodes still exist
-      const sourceExists = allMembers.some(m => m.id.toString() === edge.source)
-      const targetExists = allMembers.some(m => m.id.toString() === edge.target)
-      
-      if (sourceExists && targetExists) {
-        edges.push({
-          ...edge,
-          type: 'custom',
-          style: { stroke: '#DC2626', strokeWidth: 2 },
-          label: 'Manual',
-          labelStyle: { fontSize: 12, fill: '#DC2626' },
-        })
-      }
-    })
-
-    return edges
-  }, [familyData.grandparents.length, familyData.parents.length, familyData.currentGeneration.length, familyData.children.length, loadSavedLayout])
-
-  // Initialize nodes and edges, preserving saved layout and handling new members
+  // Initialize nodes and edges only once
   useEffect(() => {
     const savedLayout = loadSavedLayout()
     
     if (savedLayout && savedLayout.savedNodes && savedLayout.savedEdges) {
-      // Merge saved layout with current family data
-      const currentMemberIds = new Set([
-        ...familyData.grandparents,
-        ...familyData.parents,
-        ...familyData.currentGeneration,
-        ...familyData.children
-      ].map(m => m.id.toString()))
+      // Use saved layout
+      const currentMemberIds = new Set(allMembers.map(m => m.id.toString()))
       
-      // Filter saved nodes to only include current members
-      const validSavedNodes = savedLayout.savedNodes.filter((node: any) => 
-        currentMemberIds.has(node.id)
-      )
+      // Reconstruct full nodes from compressed data
+      const validSavedNodes = savedLayout.savedNodes
+        .filter((node: any) => currentMemberIds.has(node.id))
+        .map((node: any) => {
+          const member = allMembers.find(m => m.id.toString() === node.id)
+          return {
+            id: node.id,
+            type: 'familyMember',
+            position: node.position,
+            data: { member },
+            draggable: false,
+          }
+        })
       
       // Add new members with default positions
       const savedNodeIds = new Set(validSavedNodes.map((n: any) => n.id))
-      const newNodes = familyNodes.filter(node => !savedNodeIds.has(node.id))
+      const newMembers = allMembers.filter(member => !savedNodeIds.has(member.id.toString()))
       
-      // Combine saved and new nodes
-      const mergedNodes = [...validSavedNodes, ...newNodes]
+      const newNodes = newMembers.map((member, index) => ({
+        id: member.id.toString(),
+        type: 'familyMember',
+        position: {
+          x: (index % 4) * 250 + 50,
+          y: Math.floor(index / 4) * 200 + 50,
+        },
+        data: { member },
+        draggable: false,
+      }))
       
       // Filter saved edges to only include current members
       const validSavedEdges = savedLayout.savedEdges.filter((edge: any) => 
         currentMemberIds.has(edge.source) && currentMemberIds.has(edge.target)
       )
       
-      setNodes(mergedNodes)
+      setNodes([...validSavedNodes, ...newNodes])
       setEdges(validSavedEdges)
     } else {
-      // Use computed layout for first time
-      setNodes(familyNodes)
-      setEdges(familyEdges)
+      // Create initial layout
+      const initialNodes = allMembers.map((member, index) => ({
+        id: member.id.toString(),
+        type: 'familyMember',
+        position: {
+          x: (index % 4) * 250 + 50,
+          y: Math.floor(index / 4) * 200 + 50,
+        },
+        data: { member },
+        draggable: false,
+      }))
+      
+      setNodes(initialNodes)
+      setEdges([])
     }
-  }, [familyData.grandparents.length, familyData.parents.length, familyData.currentGeneration.length, familyData.children.length]) // Re-run when member count changes
+  }, [allMembers, loadSavedLayout])
 
-  // Save layout to localStorage immediately
-  const saveLayout = useCallback((currentNodes: Node[], currentEdges: Edge[]) => {
+  // Handle new family members being added
+  useEffect(() => {
+    const currentMemberIds = new Set(nodes.map(n => n.id))
+    const newMembers = allMembers.filter(member => !currentMemberIds.has(member.id.toString()))
+    
+    if (newMembers.length > 0) {
+      console.log('New members detected:', newMembers)
+      
+      const newNodes = newMembers.map((member, index) => ({
+        id: member.id.toString(),
+        type: 'familyMember',
+        position: {
+          x: (nodes.length + index) % 4 * 250 + 50,
+          y: Math.floor((nodes.length + index) / 4) * 200 + 50,
+        },
+        data: { member },
+        draggable: isEditing, // Respect current editing state
+      }))
+      
+      setNodes(prevNodes => [...prevNodes, ...newNodes])
+    }
+  }, [allMembers, nodes, isEditing])
+
+  // Save layout to localStorage with ultra-simple format
+  const saveLayout = useCallback(async (currentNodes: Node[], currentEdges: Edge[]) => {
+    setIsSaving(true)
+    setSaveMessage(null)
+    
     try {
-      const layoutData = { 
-        nodes: currentNodes, 
-        edges: currentEdges, 
-        timestamp: Date.now() 
+      // Ultra-simple format - only store what's absolutely necessary
+      const simpleLayout = {
+        // Store positions as simple arrays
+        positions: currentNodes.map(node => ({
+          id: node.id,
+          x: Math.round(node.position.x),
+          y: Math.round(node.position.y)
+        })),
+        // Store connections as simple pairs
+        connections: currentEdges.map(edge => ({
+          from: edge.source,
+          to: edge.target
+        })),
+        // Timestamp for versioning
+        t: Date.now()
       }
-      localStorage.setItem('familyTreeLayout', JSON.stringify(layoutData))
-      console.log('Layout saved:', layoutData) // Debug log
+      
+      // Convert to minimal JSON string
+      const layoutString = JSON.stringify(simpleLayout)
+      
+      // This should be tiny - if it's still too big, something is very wrong
+      if (layoutString.length > 50000) { // 50KB limit (very generous)
+        throw new Error('Layout data is unexpectedly large. Please contact support.')
+      }
+      
+      // Simple save - no complex fallbacks
+      localStorage.setItem('familyTreeLayout', layoutString)
+      
+      console.log('Layout saved successfully')
+      setSaveMessage('Layout saved successfully!')
+      setTimeout(() => setSaveMessage(null), 3000)
       
       if (onLayoutChange) {
         onLayoutChange(currentNodes, currentEdges)
       }
     } catch (error) {
       console.warn('Failed to save layout:', error)
+      setSaveMessage(`Failed to save layout: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setTimeout(() => setSaveMessage(null), 5000)
+    } finally {
+      setIsSaving(false)
     }
   }, [onLayoutChange])
 
   // Handle new connections (when user draws new edges)
   const onConnect = useCallback((params: Connection) => {
+    if (!isEditing) return // Only allow connections in edit mode
+    
     const newEdge = {
       ...params,
       id: `manual-${params.source}-${params.target}`,
@@ -453,42 +503,106 @@ export default function DraggableFamilyTree({ familyData, onLayoutChange }: Drag
       label: 'Manual',
       labelStyle: { fontSize: 12, fill: '#DC2626' },
     }
-    setEdges((eds) => {
-      const updatedEdges = addEdge(newEdge, eds)
-      // Save immediately when new connection is made
-      setTimeout(() => saveLayout(nodes, updatedEdges), 100)
-      return updatedEdges
-    })
-  }, [setEdges, nodes, saveLayout])
+    setEdges((eds) => addEdge(newEdge, eds))
+  }, [setEdges, isEditing])
 
-  // Save layout when nodes or edges change
-  useEffect(() => {
-    if (nodes.length > 0 || edges.length > 0) {
-      const timeoutId = setTimeout(() => {
-        saveLayout(nodes, edges)
-      }, 500) // Debounce saves to avoid too frequent saves
+  // Enable editing mode
+  const handleEdit = () => {
+    setIsEditing(true)
+    setNodes(prevNodes => prevNodes.map(node => ({ ...node, draggable: true })))
+    setSaveMessage(null)
+  }
+
+  // Save and exit editing mode
+  const handleSave = async () => {
+    await saveLayout(nodes, edges)
+    setIsEditing(false)
+    setNodes(prevNodes => prevNodes.map(node => ({ ...node, draggable: false })))
+  }
+
+  // Cancel editing and revert changes
+  const handleCancel = () => {
+    const savedLayout = loadSavedLayout()
+    
+    if (savedLayout && savedLayout.savedNodes && savedLayout.savedEdges) {
+      const currentMemberIds = new Set(allMembers.map(m => m.id.toString()))
       
-      return () => clearTimeout(timeoutId)
+      const validSavedNodes = savedLayout.savedNodes.filter((node: any) => 
+        currentMemberIds.has(node.id)
+      )
+      
+      const validSavedEdges = savedLayout.savedEdges.filter((edge: any) => 
+        currentMemberIds.has(edge.source) && currentMemberIds.has(edge.target)
+      )
+      
+      setNodes(validSavedNodes)
+      setEdges(validSavedEdges)
+    } else {
+      // Reset to initial layout
+      const initialNodes = allMembers.map((member, index) => ({
+        id: member.id.toString(),
+        type: 'familyMember',
+        position: {
+          x: (index % 4) * 250 + 50,
+          y: Math.floor(index / 4) * 200 + 50,
+        },
+        data: { member },
+        draggable: false,
+      }))
+      
+      setNodes(initialNodes)
+      setEdges([])
     }
-  }, [nodes, edges, saveLayout])
-
-  // Save layout when component unmounts
-  useEffect(() => {
-    return () => {
-      if (nodes.length > 0 || edges.length > 0) {
-        saveLayout(nodes, edges)
-      }
-    }
-  }, [nodes, edges, saveLayout])
+    
+    setIsEditing(false)
+    setSaveMessage(null)
+  }
 
   return (
     <div className="w-full h-[600px] border border-gray-200 rounded-lg">
       <div className="mb-2 p-2 bg-gray-50 rounded-t-lg border-b">
-        <p className="text-sm text-gray-600">
-          <strong>Instructions:</strong> Drag family members to rearrange them. 
-          Use the larger green connection nodes to draw custom relationship lines between members. 
-          Purple nodes on existing lines allow branching connections.
-        </p>
+        <div className="flex justify-between items-center">
+          <div className="flex-1">
+            <p className="text-sm text-gray-600">
+              <strong>Instructions:</strong> {isEditing 
+                ? 'Drag family members to rearrange them. Use the green connection nodes to draw custom relationship lines. Click Save when done.'
+                : 'Click Edit to start customizing your family tree layout.'
+              }
+            </p>
+            {saveMessage && (
+              <p className={`text-sm mt-1 ${saveMessage.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
+                {saveMessage}
+              </p>
+            )}
+          </div>
+          <div className="flex space-x-2 ml-4">
+            {!isEditing ? (
+              <button
+                onClick={handleEdit}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Edit Layout
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? 'Saving...' : 'Save Layout'}
+                </button>
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
       <ReactFlow
         nodes={nodes}
