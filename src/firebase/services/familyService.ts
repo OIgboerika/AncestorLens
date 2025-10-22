@@ -100,9 +100,7 @@ export const familyService = {
   // Listen to real-time family members updates
   onFamilyMembersChange: (userId: string, callback: (members: FamilyMember[]) => void) => {
     return firestoreService.onSnapshot('familyMembers', (docs) => {
-      const members = docs
-        .filter(doc => doc.userId === userId)
-        .map(convertTimestamps) as FamilyMember[]
+      const members = docs.map(convertTimestamps) as FamilyMember[]
       callback(members)
     }, [
       where('userId', '==', userId)

@@ -239,10 +239,46 @@ export default function FamilyTreePage() {
       unsubscribe = familyService.onFamilyMembersChange(user.uid, async (members) => {
         try {
           if (members && members.length > 0) {
-            // Reflect server state into local cache for persistence between refreshes
-            localStorage.setItem('familyMembers', JSON.stringify(members))
+            // Convert Firestore members to localStorage format
+            const convertedMembers = members.map(member => ({
+              id: member.id || Date.now(),
+              name: member.name,
+              firstName: member.firstName,
+              lastName: member.lastName,
+              middleName: member.middleName,
+              role: member.role,
+              birthYear: member.birthYear,
+              deathYear: member.deathYear,
+              birthDate: member.birthDate,
+              deathDate: member.deathDate,
+              birthPlace: member.birthPlace,
+              deathPlace: member.deathPlace,
+              location: member.location,
+              city: member.city,
+              state: member.state,
+              country: member.country,
+              coordinates: member.coordinates,
+              relationship: member.relationship,
+              gender: member.gender,
+              occupation: member.occupation,
+              email: member.email,
+              phone: member.phone,
+              address: member.address,
+              bio: member.bio,
+              image: member.image,
+              heritageTags: member.heritageTags,
+              parentId: member.parentId,
+              hasChildren: member.hasChildren,
+              hasParents: member.hasParents
+            }))
+            
+            // Update localStorage with Firestore data
+            localStorage.setItem('familyMembers', JSON.stringify(convertedMembers))
+            console.log('Family Tree - Updated localStorage with Firestore data:', convertedMembers)
           }
-        } catch {}
+        } catch (error) {
+          console.error('Error processing Firestore members:', error)
+        }
         loadFamilyMembers()
       })
     } else {
