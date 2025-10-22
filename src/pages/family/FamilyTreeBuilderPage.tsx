@@ -511,15 +511,6 @@ const FamilyTreeBuilderPage = () => {
               placeholder="Enter phone number"
             />
           </div>
-          
-          <Input
-            label="Address"
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            placeholder="Enter full address"
-            className="mt-4"
-          />
         </Card>
 
         {/* Family Relationships */}
