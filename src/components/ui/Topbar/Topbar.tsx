@@ -7,9 +7,19 @@ export default function Topbar() {
 
   const handleSignOut = async () => {
     try {
+      // Clear all localStorage data
+      localStorage.clear()
+      
+      // Sign out from Firebase
       await signOut()
+      
+      // Force page reload to clear any cached state
+      window.location.href = '/login'
     } catch (error) {
       console.error('Failed to sign out:', error)
+      // Even if Firebase signOut fails, clear local data and redirect
+      localStorage.clear()
+      window.location.href = '/login'
     }
   }
 

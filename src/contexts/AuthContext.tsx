@@ -74,6 +74,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(true)
     try {
       await authService.signOut()
+      // Clear all localStorage data
+      localStorage.clear()
       setUser(null)
     } finally {
       setLoading(false)
