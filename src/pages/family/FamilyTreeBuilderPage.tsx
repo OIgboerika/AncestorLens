@@ -26,6 +26,8 @@ const FamilyTreeBuilderPage = () => {
     deathDate: '',
     birthPlace: '',
     deathPlace: '',
+    currentLocation: '',
+    coordinates: { lat: 0, lng: 0 },
     occupation: '',
     email: '',
     phone: '',
@@ -122,7 +124,8 @@ const FamilyTreeBuilderPage = () => {
       role: formData.deathDate ? 'Deceased' : 'Living',
       birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
       deathYear: formData.deathDate ? new Date(formData.deathDate).getFullYear().toString() : '',
-      location: formData.birthPlace || 'Unknown',
+      location: formData.currentLocation || formData.birthPlace || 'Unknown',
+      coordinates: formData.coordinates,
       image: undefined as string | undefined
     }
     
@@ -148,6 +151,7 @@ const FamilyTreeBuilderPage = () => {
           birthPlace: formData.birthPlace || undefined,
           deathPlace: formData.deathPlace || undefined,
           location: payload.location || undefined,
+          coordinates: payload.coordinates || undefined,
           relationship: formData.relationship,
           gender: formData.gender || undefined,
           occupation: formData.occupation || undefined,
@@ -391,6 +395,60 @@ const FamilyTreeBuilderPage = () => {
                 placeholder="Enter death place"
               />
             </div>
+          </div>
+        </Card>
+
+        {/* Current Location */}
+        <Card>
+          <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Current Location</h2>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Current Location"
+              name="currentLocation"
+              value={formData.currentLocation}
+              onChange={handleInputChange}
+              placeholder="Enter current city, country"
+            />
+            
+            <div className="flex space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {/* TODO: Get current location */}}
+                className="flex-1"
+              >
+                Use Current Location
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            <Input
+              label="Latitude"
+              name="coordinates.lat"
+              type="number"
+              step="any"
+              value={formData.coordinates.lat}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                coordinates: { ...prev.coordinates, lat: parseFloat(e.target.value) || 0 }
+              }))}
+              placeholder="Enter latitude"
+            />
+            
+            <Input
+              label="Longitude"
+              name="coordinates.lng"
+              type="number"
+              step="any"
+              value={formData.coordinates.lng}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                coordinates: { ...prev.coordinates, lng: parseFloat(e.target.value) || 0 }
+              }))}
+              placeholder="Enter longitude"
+            />
           </div>
         </Card>
 

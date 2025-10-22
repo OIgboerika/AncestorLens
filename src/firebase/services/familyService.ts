@@ -16,6 +16,7 @@ export interface FamilyMember {
   birthPlace?: string
   deathPlace?: string
   location?: string
+  coordinates?: { lat: number; lng: number }
   relationship: string
   gender?: string
   occupation?: string

@@ -17,6 +17,7 @@ import Button from '../../components/ui/Button/Button'
 import { useAuth } from '../../contexts/AuthContext'
 import { familyService } from '../../firebase/services/familyService'
 import DraggableFamilyTree from '../../components/family/DraggableFamilyTree'
+import FamilyMemberMap from '../../components/maps/FamilyMemberMap'
 
 interface FamilyMember {
   id: number | string
@@ -25,6 +26,7 @@ interface FamilyMember {
   birthYear?: string
   deathYear?: string
   location?: string
+  coordinates?: { lat: number; lng: number }
   relationship: string
   parentId?: string | number
   hasChildren?: boolean
@@ -39,21 +41,22 @@ export default function FamilyTreePage() {
   const [scale, setScale] = useState(1)
   const [hideMock] = useState<boolean>(true)
   const [viewMode, setViewMode] = useState<'static' | 'draggable'>('static')
-  const [familyData, setFamilyData] = useState<{ grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[] }>({
+  const [familyData, setFamilyData] = useState<{ grandparents: FamilyMember[]; parents: FamilyMember[]; currentGeneration: FamilyMember[]; children: FamilyMember[]; allMembers: FamilyMember[] }>({
     currentGeneration: [],
     parents: [],
     grandparents: [],
     children: [],
+    allMembers: []
   })
   const navigate = useNavigate()
 
   // Helper to build family tree based on proper generational hierarchy with parent-child connections
   const buildFamilyTree = (members: FamilyMember[]) => {
-    if (members.length === 0) return { grandparents: [], parents: [], currentGeneration: [], children: [] }
+    if (members.length === 0) return { grandparents: [], parents: [], currentGeneration: [], children: [], allMembers: [] }
 
     // Find the root member (Self)
     const rootMember = members.find(m => m.relationship === 'Self')
-    if (!rootMember) return { grandparents: [], parents: [], currentGeneration: [], children: [] }
+    if (!rootMember) return { grandparents: [], parents: [], currentGeneration: [], children: [], allMembers: [] }
 
     // Build generations properly based on relationships and parentId connections
     const grandparents: FamilyMember[] = []
@@ -209,7 +212,8 @@ export default function FamilyTreePage() {
       grandparents: sortGrandparentsByParent(sortGeneration(grandparents), parentsGeneration.filter(m => ['Father', 'Mother'].includes(m.relationship))),
       parents: sortParentsGeneration(parentsGeneration),
       currentGeneration: sortCurrentGeneration(currentGeneration),
-      children: sortGeneration(children)
+      children: sortGeneration(children),
+      allMembers: members
     }
   }
 
@@ -602,6 +606,21 @@ export default function FamilyTreePage() {
                     </div>
                   )}
                 </div>
+              </div>
+              
+              {/* Family Member Location Map - Only for static view */}
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Living Family Members Map
+                </h3>
+                <FamilyMemberMap 
+                  familyMembers={familyData.allMembers.filter(member => member.role === 'Living')}
+                  className="border border-gray-200"
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Showing locations of living family members. Add coordinates when creating family members to see them on the map.
+                </p>
               </div>
             </div>
           ) : (
