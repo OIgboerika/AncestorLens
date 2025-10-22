@@ -26,15 +26,10 @@ const FamilyTreeBuilderPage = () => {
     deathDate: '',
     birthPlace: '',
     deathPlace: '',
-    currentLocation: '',
-    city: '',
-    state: '',
-    country: '',
     coordinates: { lat: 0, lng: 0 },
     occupation: '',
     email: '',
     phone: '',
-    address: '',
     bio: '',
     relationship: '',
     parentId: '',
@@ -78,6 +73,7 @@ const FamilyTreeBuilderPage = () => {
   // Heritage tags state
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
   const suggested = [
     'Maasai','Yoruba','Asante','Zulu','Igbo','Hausa','Amhara','Xhosa','Elder','Storyteller','Lineage Keeper','Community Leader','Artisan','Warrior','Healer','Spiritual Guide','Historian','Poet','Musician','Educator','Innovator','Youth Ambassador'
   ]
@@ -110,6 +106,53 @@ const FamilyTreeBuilderPage = () => {
     }
   }
 
+  const handleGetCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by this browser.')
+      return
+    }
+
+    setIsGettingLocation(true)
+    
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        })
+      })
+
+      const { latitude, longitude } = position.coords
+      
+      setFormData(prev => ({
+        ...prev,
+        coordinates: { lat: latitude, lng: longitude }
+      }))
+
+      // Reverse geocode to get address
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+        )
+        const data = await response.json()
+        
+        if (data.display_name) {
+          console.log('Location found:', data.display_name)
+        }
+      } catch (error) {
+        console.log('Reverse geocoding failed, but coordinates are set')
+      }
+
+      alert('Current location set successfully!')
+    } catch (error) {
+      console.error('Error getting location:', error)
+      alert('Failed to get current location. Please check your browser permissions.')
+    } finally {
+      setIsGettingLocation(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -127,10 +170,7 @@ const FamilyTreeBuilderPage = () => {
       role: formData.deathDate ? 'Deceased' : 'Living',
       birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
       deathYear: formData.deathDate ? new Date(formData.deathDate).getFullYear().toString() : '',
-      location: formData.currentLocation || formData.birthPlace || 'Unknown',
-      city: formData.city,
-      state: formData.state,
-      country: formData.country,
+      location: formData.birthPlace || 'Unknown',
       coordinates: formData.coordinates,
       image: undefined as string | undefined
     }
@@ -157,16 +197,12 @@ const FamilyTreeBuilderPage = () => {
           birthPlace: formData.birthPlace || undefined,
           deathPlace: formData.deathPlace || undefined,
           location: payload.location || undefined,
-          city: payload.city || undefined,
-          state: payload.state || undefined,
-          country: payload.country || undefined,
           coordinates: payload.coordinates || undefined,
           relationship: formData.relationship,
           gender: formData.gender || undefined,
           occupation: formData.occupation || undefined,
           email: formData.email || undefined,
           phone: formData.phone || undefined,
-          address: formData.address || undefined,
           bio: formData.bio || undefined,
           image: imageUrl,
           heritageTags: tags,
@@ -407,68 +443,11 @@ const FamilyTreeBuilderPage = () => {
           </div>
         </Card>
 
-        {/* Current Location */}
+        {/* Location */}
         <Card>
-          <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Current Location</h2>
+          <h2 className="text-xl font-semibold text-ancestor-dark mb-6">Location</h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Current Location"
-              name="currentLocation"
-              value={formData.currentLocation}
-              onChange={handleInputChange}
-              placeholder="Enter current city, country"
-            />
-            
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {/* TODO: Get current location */}}
-                className="flex-1"
-              >
-                Use Current Location
-              </Button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <Input
-              label="City"
-              name="city"
-              value={formData.city}
-              onChange={handleInputChange}
-              placeholder="Enter city"
-            />
-            
-            <Input
-              label="State/Province"
-              name="state"
-              value={formData.state}
-              onChange={handleInputChange}
-              placeholder="Enter state or province"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <Input
-              label="Country"
-              name="country"
-              value={formData.country}
-              onChange={handleInputChange}
-              placeholder="Enter country"
-            />
-            
-            <Input
-              label="Street Address (Optional)"
-              name="address"
-              value={formData.address}
-              onChange={handleInputChange}
-              placeholder="Enter street address"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <Input
               label="Latitude"
               name="coordinates.lat"
@@ -494,6 +473,18 @@ const FamilyTreeBuilderPage = () => {
               }))}
               placeholder="Enter longitude"
             />
+          </div>
+          
+          <div className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGetCurrentLocation}
+              disabled={isGettingLocation}
+              className="w-full"
+            >
+              {isGettingLocation ? 'Getting Location...' : 'Use Current Location'}
+            </Button>
           </div>
         </Card>
 
