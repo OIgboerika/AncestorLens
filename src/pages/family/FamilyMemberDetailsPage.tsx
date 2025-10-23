@@ -125,14 +125,14 @@ const FamilyMemberDetailsPage = () => {
   // Geocoding functions
   const handleGeocodeAddress = async () => {
     const address = geocodingService.buildAddressString(
-      memberData.city,
-      memberData.state,
+      '', // city - removed
+      '', // state - removed
       memberData.country,
       memberData.address
     )
 
     if (!address.trim()) {
-      setGeocodingError('Please enter at least one location field (city, state, country, or address)')
+      setGeocodingError('Please enter at least Country or Street Address')
       return
     }
 
@@ -170,10 +170,16 @@ const FamilyMemberDetailsPage = () => {
         // Get address from coordinates
         const address = await geocodingService.reverseGeocode(coordinates.lat, coordinates.lng)
         
+        // Extract country from the reverse geocoded address
+        const addressParts = address?.split(',') || []
+        const country = addressParts[addressParts.length - 1]?.trim() || ''
+        
         setMemberData(prev => ({
           ...prev,
           coordinates,
-          location: address || 'Current Location'
+          location: address || 'Current Location',
+          country: country || prev.country, // Update country if found
+          address: prev.address || address || '' // Keep existing address or use reverse geocoded
         }))
         setGeocodingError(null)
       } else {
@@ -475,36 +481,6 @@ const FamilyMemberDetailsPage = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Location</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="city"
-                    value={memberData.city || ''}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="Enter city"
-                  />
-                ) : (
-                  <p className="text-gray-900">{memberData.city || '—'}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="state"
-                    value={memberData.state || ''}
-                    onChange={handleInputChange}
-                    className="input-field"
-                    placeholder="Enter state or province"
-                  />
-                ) : (
-                  <p className="text-gray-900">{memberData.state || '—'}</p>
-                )}
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                 {isEditing ? (
                   <input
@@ -574,70 +550,6 @@ const FamilyMemberDetailsPage = () => {
                     </p>
                   </div>
                 )}
-              </div>
-            )}
-          </Card>
-
-          {/* Location Coordinates */}
-          <Card className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Location Coordinates</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    step="any"
-                    name="coordinates.lat"
-                    value={memberData.coordinates?.lat || ''}
-                    onChange={(e) => {
-                      const lat = parseFloat(e.target.value) || 0
-                      setMemberData(prev => ({
-                        ...prev,
-                        coordinates: { ...(prev.coordinates || { lat: 0, lng: 0 }), lat }
-                      }))
-                    }}
-                    className="input-field"
-                    placeholder="Enter latitude"
-                  />
-                ) : (
-                  <p className="text-gray-900">{memberData.coordinates?.lat || '—'}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
-                {isEditing ? (
-                  <input
-                    type="number"
-                    step="any"
-                    name="coordinates.lng"
-                    value={memberData.coordinates?.lng || ''}
-                    onChange={(e) => {
-                      const lng = parseFloat(e.target.value) || 0
-                      setMemberData(prev => ({
-                        ...prev,
-                        coordinates: { ...(prev.coordinates || { lat: 0, lng: 0 }), lng }
-                      }))
-                    }}
-                    className="input-field"
-                    placeholder="Enter longitude"
-                  />
-                ) : (
-                  <p className="text-gray-900">{memberData.coordinates?.lng || '—'}</p>
-                )}
-              </div>
-            </div>
-            {isEditing && (
-              <div className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {/* TODO: Get current location */}}
-                  className="w-full"
-                >
-                  <MapPin className="w-4 h-4 mr-2" />
-                  Use Current Location
-                </Button>
               </div>
             )}
           </Card>
