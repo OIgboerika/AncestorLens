@@ -125,14 +125,14 @@ const FamilyMemberDetailsPage = () => {
   // Geocoding functions
   const handleGeocodeAddress = async () => {
     const address = geocodingService.buildAddressString(
-      '', // city - removed
+      memberData.city, // Now using city field
       '', // state - removed
       memberData.country,
       memberData.address
     )
 
     if (!address.trim()) {
-      setGeocodingError('Please enter at least Country or Street Address')
+      setGeocodingError('Please enter at least City, Country, or Street Address')
       return
     }
 
@@ -173,14 +173,16 @@ const FamilyMemberDetailsPage = () => {
         // Get address from coordinates
         const address = await geocodingService.reverseGeocode(coordinates.lat, coordinates.lng)
         
-        // Extract country from the reverse geocoded address
+        // Extract city and country from the reverse geocoded address
         const addressParts = address?.split(',') || []
+        const city = addressParts[addressParts.length - 2]?.trim() || ''
         const country = addressParts[addressParts.length - 1]?.trim() || ''
         
         setMemberData(prev => ({
           ...prev,
           coordinates,
           location: address || 'Current Location',
+          city: city || prev.city, // Update city if found
           country: country || prev.country, // Update country if found
           address: prev.address || address || '' // Keep existing address or use reverse geocoded
         }))
@@ -482,7 +484,22 @@ const FamilyMemberDetailsPage = () => {
           {/* Detailed Location Information */}
           <Card className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Location</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="city"
+                    value={memberData.city || ''}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    placeholder="Enter city"
+                  />
+                ) : (
+                  <p className="text-gray-900">{memberData.city || '—'}</p>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
                 {isEditing ? (

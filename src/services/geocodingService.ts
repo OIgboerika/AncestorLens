@@ -75,7 +75,16 @@ export const geocodingService = {
     
     // If we have a street address, use it as the primary identifier
     if (address && address.trim()) {
-      parts.push(address.trim())
+      // Clean the address to remove any country duplicates
+      let cleanAddress = address.trim()
+      
+      // Remove country from address if it's already there
+      if (country && country.trim()) {
+        const countryRegex = new RegExp(`,\\s*${country.trim()}\\s*$`, 'i')
+        cleanAddress = cleanAddress.replace(countryRegex, '').trim()
+      }
+      
+      parts.push(cleanAddress)
     }
     
     // Add city if available
