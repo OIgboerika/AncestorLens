@@ -140,6 +140,7 @@ const FamilyMemberDetailsPage = () => {
     setGeocodingError(null)
 
     try {
+      console.log('Attempting to geocode:', address) // Debug log
       const coordinates = await geocodingService.geocodeAddress(address)
       
       if (coordinates) {
@@ -149,10 +150,12 @@ const FamilyMemberDetailsPage = () => {
           location: address // Update the general location field
         }))
         setGeocodingError(null)
+        console.log('Geocoding successful:', coordinates) // Debug log
       } else {
-        setGeocodingError('Could not find coordinates for this address. Please try a more specific location.')
+        setGeocodingError(`Could not find coordinates for "${address}". Try adding more specific details like city or state, or use "Use Current Location" instead.`)
       }
     } catch (error) {
+      console.error('Geocoding error:', error) // Debug log
       setGeocodingError('Failed to get coordinates. Please check your internet connection and try again.')
     } finally {
       setIsGeocoding(false)

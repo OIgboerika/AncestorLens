@@ -16,16 +16,21 @@ export const geocodingService = {
       // Clean and format the address
       const cleanAddress = address.trim().replace(/\s+/g, '+')
       
-      // Use OpenStreetMap Nominatim API
+      console.log('Geocoding address:', cleanAddress) // Debug log
+      
+      // Use OpenStreetMap Nominatim API with better parameters
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanAddress)}&limit=1&addressdetails=1`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanAddress)}&limit=5&addressdetails=1&countrycodes=&extratags=1`
       )
       
       if (!response.ok) {
+        console.error('Geocoding request failed:', response.status, response.statusText)
         throw new Error('Geocoding request failed')
       }
       
       const data: GeocodingResult[] = await response.json()
+      
+      console.log('Geocoding results:', data) // Debug log
       
       if (data.length === 0) {
         console.warn('No results found for address:', address)
@@ -33,6 +38,8 @@ export const geocodingService = {
       }
       
       const result = data[0]
+      console.log('Selected result:', result) // Debug log
+      
       return {
         lat: typeof result.lat === 'string' ? parseFloat(result.lat) : result.lat,
         lng: typeof result.lng === 'string' ? parseFloat(result.lng) : result.lng
@@ -66,12 +73,29 @@ export const geocodingService = {
   buildAddressString(city?: string, state?: string, country?: string, address?: string): string {
     const parts = []
     
-    if (address) parts.push(address)
-    if (city) parts.push(city)
-    if (state) parts.push(state)
-    if (country) parts.push(country)
+    // If we have a street address, use it as the primary identifier
+    if (address && address.trim()) {
+      parts.push(address.trim())
+    }
     
-    return parts.join(', ')
+    // Add city if available
+    if (city && city.trim()) {
+      parts.push(city.trim())
+    }
+    
+    // Add state if available
+    if (state && state.trim()) {
+      parts.push(state.trim())
+    }
+    
+    // Always add country for better geocoding results
+    if (country && country.trim()) {
+      parts.push(country.trim())
+    }
+    
+    const fullAddress = parts.join(', ')
+    console.log('Built address string:', fullAddress) // Debug log
+    return fullAddress
   },
 
   // Get current location using browser geolocation
