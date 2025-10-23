@@ -54,43 +54,67 @@ export default function ProfilePage() {
       const localCulturalMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
       const localBurialSites = JSON.parse(localStorage.getItem('burialSites') || '[]')
 
-      // DATA CLEANUP: Remove orphaned Firestore data that doesn't exist in localStorage
-      // This fixes the issue where "Ezenwa Igboerika" exists in Firestore but not in localStorage
-      const validFamilyMembers = familyMembers.filter((firestoreMember: any) => 
-        localFamilyMembers.some((localMember: any) => 
-          localMember.id === firestoreMember.id || 
-          localMember.name === firestoreMember.name
+      // DATA CLEANUP: Remove orphaned data from both Firestore and localStorage
+      // This fixes the issue where "Ezenwa Igboerika" exists in either Firestore or localStorage
+      
+      // Find members that exist in localStorage but not in Firestore (orphaned localStorage)
+      const orphanedLocalMembers = localFamilyMembers.filter((localMember: any) => 
+        !familyMembers.some((firestoreMember: any) => 
+          firestoreMember.id === localMember.id || 
+          firestoreMember.name === localMember.name
         )
       )
 
-      // If there are orphaned Firestore members, clean them up
-      const orphanedMembers = familyMembers.filter((firestoreMember: any) => 
+      // Find members that exist in Firestore but not in localStorage (orphaned Firestore)
+      const orphanedFirestoreMembers = familyMembers.filter((firestoreMember: any) => 
         !localFamilyMembers.some((localMember: any) => 
           localMember.id === firestoreMember.id || 
           localMember.name === firestoreMember.name
         )
       )
 
-      if (orphanedMembers.length > 0) {
-        console.log('Found orphaned family members in Firestore:', orphanedMembers.map((m: any) => m.name))
+      // Clean up orphaned localStorage members
+      if (orphanedLocalMembers.length > 0) {
+        console.log('Found orphaned family members in localStorage:', orphanedLocalMembers.map((m: any) => m.name))
+        
+        // Remove orphaned members from localStorage
+        const cleanedLocalMembers = localFamilyMembers.filter((localMember: any) => 
+          !orphanedLocalMembers.some((orphaned: any) => orphaned.id === localMember.id)
+        )
+        localStorage.setItem('familyMembers', JSON.stringify(cleanedLocalMembers))
+        console.log('Cleaned up orphaned localStorage members')
+      }
+
+      // Clean up orphaned Firestore members
+      if (orphanedFirestoreMembers.length > 0) {
+        console.log('Found orphaned family members in Firestore:', orphanedFirestoreMembers.map((m: any) => m.name))
         
         // Remove orphaned members from Firestore
-        for (const orphanedMember of orphanedMembers) {
+        for (const orphanedMember of orphanedFirestoreMembers) {
           try {
             if (orphanedMember.id) {
               await familyService.deleteFamilyMember(orphanedMember.id)
-              console.log(`Removed orphaned member: ${orphanedMember.name}`)
+              console.log(`Removed orphaned Firestore member: ${orphanedMember.name}`)
             } else {
-              console.warn(`Cannot remove orphaned member ${orphanedMember.name}: missing ID`)
+              console.warn(`Cannot remove orphaned Firestore member ${orphanedMember.name}: missing ID`)
             }
           } catch (error) {
-            console.error(`Failed to remove orphaned member ${orphanedMember.name}:`, error)
+            console.error(`Failed to remove orphaned Firestore member ${orphanedMember.name}:`, error)
           }
         }
       }
 
+      // Use cleaned localStorage data as the source of truth
+      const cleanedLocalMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+      const validFamilyMembers = familyMembers.filter((firestoreMember: any) => 
+        cleanedLocalMembers.some((localMember: any) => 
+          localMember.id === firestoreMember.id || 
+          localMember.name === firestoreMember.name
+        )
+      )
+
       // Combine Firestore and localStorage data, removing duplicates
-      const allFamilyMembers = [...validFamilyMembers, ...localFamilyMembers.filter((local: any) => 
+      const allFamilyMembers = [...validFamilyMembers, ...cleanedLocalMembers.filter((local: any) => 
         !validFamilyMembers.some(firestore => firestore.id === local.id)
       )]
       
