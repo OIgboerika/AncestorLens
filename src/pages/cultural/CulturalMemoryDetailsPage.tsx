@@ -37,15 +37,81 @@ export default function CulturalMemoryDetailsPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [relatedMemories, setRelatedMemories] = useState<MemoryItem[]>([])
+
+  // Load related memories based on category
+  const loadRelatedMemories = async (currentMemory: MemoryItem) => {
+    if (!currentMemory.category || !user?.uid) return
+
+    try {
+      // Try to get from Firestore first
+      const firestoreMemories = await culturalMemoryService.getMemoriesByCategory(user.uid, currentMemory.category)
+      
+      // Filter out the current memory and limit to 3
+      const related = firestoreMemories
+        .filter(m => m.id !== currentMemory.id)
+        .slice(0, 3)
+        .map(m => ({
+          ...m,
+          id: m.id || '',
+          title: m.title,
+          description: m.description,
+          uploadedBy: m.uploadedBy,
+          uploadDate: m.uploadDate,
+          location: m.location || 'Unknown',
+          category: m.category,
+          type: m.type as MediaType,
+          duration: m.duration,
+          imageUrl: m.imageUrl,
+          images: m.images,
+          audioUrl: m.audioUrl,
+          participants: m.participants,
+          tags: m.tags
+        }))
+
+      if (related.length > 0) {
+        setRelatedMemories(related)
+        return
+      }
+
+      // Fallback to localStorage if no Firestore results
+      const localMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+      const localRelated = localMemories
+        .filter((m: MemoryItem) => m.category === currentMemory.category && m.id !== currentMemory.id)
+        .slice(0, 3)
+      
+      setRelatedMemories(localRelated)
+    } catch (error) {
+      console.error('Error loading related memories:', error)
+      
+      // Fallback to localStorage on error
+      const localMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+      const localRelated = localMemories
+        .filter((m: MemoryItem) => m.category === currentMemory.category && m.id !== currentMemory.id)
+        .slice(0, 3)
+      
+      setRelatedMemories(localRelated)
+    }
+  }
 
   // Load from Firestore if navigated directly
   React.useEffect(() => {
     if (!memoryFromState && user?.uid && id) {
       culturalMemoryService.getCulturalMemory(id).then(doc => {
-        if (doc) setMemory(doc as any)
+        if (doc) {
+          setMemory(doc as any)
+          loadRelatedMemories(doc as any)
+        }
       }).catch(() => {})
     }
   }, [id, user, memoryFromState])
+
+  // Load related memories when memory is set from state
+  React.useEffect(() => {
+    if (memoryFromState) {
+      loadRelatedMemories(memoryFromState)
+    }
+  }, [memoryFromState])
 
   useEffect(() => {
     if (!audioRef.current) return
@@ -280,22 +346,38 @@ export default function CulturalMemoryDetailsPage() {
 
           <Card>
             <h3 className="text-lg font-semibold text-ancestor-dark mb-4">Related Memories</h3>
-            <div className="space-y-3 text-sm text-gray-700">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center"><Volume2 className="w-4 h-4 text-gray-500" /></div>
-                <div className="flex-1">
-                  <p className="font-medium text-ancestor-dark">Market Days</p>
-                  <p className="text-xs text-gray-500">08:21 • Dec 29, 2023</p>
-                </div>
+            {relatedMemories.length > 0 ? (
+              <div className="space-y-3 text-sm text-gray-700">
+                {relatedMemories.map((relatedMemory) => (
+                  <div 
+                    key={relatedMemory.id} 
+                    className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                    onClick={() => navigate(`/cultural-memories/${relatedMemory.id}`, { state: { memory: relatedMemory } })}
+                  >
+                    <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                      {relatedMemory.type === 'audio' ? (
+                        <Volume2 className="w-4 h-4 text-gray-500" />
+                      ) : (
+                        <ImageIcon className="w-4 h-4 text-gray-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-ancestor-dark">{relatedMemory.title}</p>
+                      <p className="text-xs text-gray-500">
+                        {relatedMemory.type === 'audio' && relatedMemory.duration ? relatedMemory.duration : ''}
+                        {relatedMemory.type === 'audio' && relatedMemory.duration ? ' • ' : ''}
+                        {relatedMemory.uploadDate}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center"><Volume2 className="w-4 h-4 text-gray-500" /></div>
-                <div className="flex-1">
-                  <p className="font-medium text-ancestor-dark">Migration West</p>
-                  <p className="text-xs text-gray-500">18:03 • Nov 3, 2023</p>
-                </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                <p className="text-sm">No related memories found</p>
+                <p className="text-xs mt-1">Memories with the same category will appear here</p>
               </div>
-            </div>
+            )}
           </Card>
         </div>
       </div>
