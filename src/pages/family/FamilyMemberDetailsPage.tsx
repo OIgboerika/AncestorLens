@@ -268,11 +268,48 @@ const FamilyMemberDetailsPage = () => {
       mother: '',
       spouse: '',
       children: [] as string[],
-      siblings: [] as string[]
+      siblings: [] as string[],
+      grandparents: [] as string[],
+      grandchildren: [] as string[],
+      uncles: [] as string[],
+      aunts: [] as string[],
+      nieces: [] as string[],
+      nephews: [] as string[],
+      cousins: [] as string[]
     }
     
-    // Find father and mother - they have relationship 'Father'/'Mother' and their parentId points to current member
-    // OR current member has parentId pointing to them
+    // Helper function to find reciprocal relationships
+    const findReciprocalRelationships = (targetRel: string[]) => {
+      return allMembers.filter(m => {
+        if (m.id === currentMember.id) return false; // Don't include self
+        
+        // Direct relationship match
+        if (targetRel.includes(m.relationship || '')) {
+          // Check if they share parentId or have direct connection
+          if (m.parentId === String(currentMember.id) || String(m.id) === currentMember.parentId) {
+            return true;
+          }
+          
+          // For siblings, check if both have same parentId
+          if (['Brother', 'Sister'].includes(m.relationship || '') && ['Brother', 'Sister', 'Self'].includes(currentMember.relationship || '')) {
+            return m.parentId === currentMember.parentId;
+          }
+          
+          // For grandparents/grandchildren, check generational connections
+          if (['Grandfather', 'Grandmother'].includes(m.relationship || '') && ['Father', 'Mother'].includes(currentMember.relationship || '')) {
+            return m.parentId === String(currentMember.id);
+          }
+          
+          if (['Father', 'Mother'].includes(m.relationship || '') && ['Grandfather', 'Grandmother'].includes(currentMember.relationship || '')) {
+            return String(m.id) === currentMember.parentId;
+          }
+        }
+        
+        return false;
+      });
+    };
+    
+    // Find father and mother
     const father = allMembers.find(m => 
       m.relationship === 'Father' && 
       (m.parentId === String(currentMember.id) || String(m.id) === currentMember.parentId)
@@ -283,29 +320,28 @@ const FamilyMemberDetailsPage = () => {
       (m.parentId === String(currentMember.id) || String(m.id) === currentMember.parentId)
     )
     
-    // Find spouse - they have relationship 'Husband'/'Wife'/'Spouse' and their parentId points to current member
+    // Find spouse
     const spouse = allMembers.find(m => 
       (m.relationship === 'Husband' || m.relationship === 'Wife' || m.relationship === 'Spouse') &&
       m.parentId === String(currentMember.id)
     )
     
-    // Find children - their parentId points to current member and they are 'Son'/'Daughter'/'Child'
+    // Find children
     const children = allMembers.filter(m => 
       m.parentId === String(currentMember.id) &&
       (m.relationship === 'Son' || m.relationship === 'Daughter' || m.relationship === 'Child')
     )
     
-    // Find siblings - reciprocal relationship detection
+    // Find siblings (reciprocal)
     const siblings = allMembers.filter(m => {
-      if (m.id === currentMember.id) return false; // Don't include self
+      if (m.id === currentMember.id) return false;
       
-      // Case 1: Both currentMember and 'm' share the same parentId
+      // Same parentId (both children of same parent)
       if (currentMember.parentId && m.parentId && currentMember.parentId === m.parentId) {
         return true;
       }
       
-      // Case 2: One is 'Self' and the other is 'Brother' or 'Sister' (relative to 'Self')
-      // This handles the reciprocal display for the primary user and their direct siblings
+      // One is 'Self' and the other is 'Brother' or 'Sister'
       if (
         (currentMember.relationship === 'Self' && (m.relationship === 'Brother' || m.relationship === 'Sister')) ||
         (m.relationship === 'Self' && (currentMember.relationship === 'Brother' || currentMember.relationship === 'Sister'))
@@ -316,11 +352,35 @@ const FamilyMemberDetailsPage = () => {
       return false;
     })
     
+    // Find grandparents (reciprocal with grandchildren)
+    const grandparents = findReciprocalRelationships(['Grandfather', 'Grandmother'])
+    
+    // Find grandchildren (reciprocal with grandparents)
+    const grandchildren = findReciprocalRelationships(['Grandson', 'Granddaughter'])
+    
+    // Find uncles and aunts (reciprocal with nieces and nephews)
+    const uncles = findReciprocalRelationships(['Uncle'])
+    const aunts = findReciprocalRelationships(['Aunt'])
+    
+    // Find nieces and nephews (reciprocal with uncles and aunts)
+    const nieces = findReciprocalRelationships(['Niece'])
+    const nephews = findReciprocalRelationships(['Nephew'])
+    
+    // Find cousins (reciprocal)
+    const cousins = findReciprocalRelationships(['Cousin'])
+    
     relationships.father = father?.name || ''
     relationships.mother = mother?.name || ''
     relationships.spouse = spouse?.name || ''
     relationships.children = children.map(c => c.name)
     relationships.siblings = siblings.map(s => s.name)
+    relationships.grandparents = grandparents.map(g => g.name)
+    relationships.grandchildren = grandchildren.map(g => g.name)
+    relationships.uncles = uncles.map(u => u.name)
+    relationships.aunts = aunts.map(a => a.name)
+    relationships.nieces = nieces.map(n => n.name)
+    relationships.nephews = nephews.map(n => n.name)
+    relationships.cousins = cousins.map(c => c.name)
     
     return relationships
   }, [memberData.id, memberData.parentId, memberData.relationship])
@@ -331,7 +391,14 @@ const FamilyMemberDetailsPage = () => {
       (calculatedRelationships.mother ? 1 : 0) +
       (calculatedRelationships.spouse ? 1 : 0) +
       calculatedRelationships.children.length +
-      calculatedRelationships.siblings.length
+      calculatedRelationships.siblings.length +
+      calculatedRelationships.grandparents.length +
+      calculatedRelationships.grandchildren.length +
+      calculatedRelationships.uncles.length +
+      calculatedRelationships.aunts.length +
+      calculatedRelationships.nieces.length +
+      calculatedRelationships.nephews.length +
+      calculatedRelationships.cousins.length
     )
   }, [calculatedRelationships])
 
@@ -464,6 +531,97 @@ const FamilyMemberDetailsPage = () => {
                   )}
                 </div>
               </div>
+              
+              {/* Extended Family Relationships */}
+              {(calculatedRelationships.grandparents.length > 0 || 
+                calculatedRelationships.grandchildren.length > 0 || 
+                calculatedRelationships.uncles.length > 0 || 
+                calculatedRelationships.aunts.length > 0 || 
+                calculatedRelationships.nieces.length > 0 || 
+                calculatedRelationships.nephews.length > 0 || 
+                calculatedRelationships.cousins.length > 0) && (
+                <div className="border-t border-gray-200 pt-3">
+                  <span className="text-sm text-gray-600">Extended Family</span>
+                  <div className="mt-2 space-y-2">
+                    {calculatedRelationships.grandparents.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500">Grandparents:</span>
+                        <div className="ml-2 space-y-1">
+                          {calculatedRelationships.grandparents.map((gp, index) => (
+                            <div key={index} className="text-sm font-medium text-gray-900">• {gp}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {calculatedRelationships.grandchildren.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500">Grandchildren:</span>
+                        <div className="ml-2 space-y-1">
+                          {calculatedRelationships.grandchildren.map((gc, index) => (
+                            <div key={index} className="text-sm font-medium text-gray-900">• {gc}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {calculatedRelationships.uncles.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500">Uncles:</span>
+                        <div className="ml-2 space-y-1">
+                          {calculatedRelationships.uncles.map((uncle, index) => (
+                            <div key={index} className="text-sm font-medium text-gray-900">• {uncle}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {calculatedRelationships.aunts.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500">Aunts:</span>
+                        <div className="ml-2 space-y-1">
+                          {calculatedRelationships.aunts.map((aunt, index) => (
+                            <div key={index} className="text-sm font-medium text-gray-900">• {aunt}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {calculatedRelationships.nieces.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500">Nieces:</span>
+                        <div className="ml-2 space-y-1">
+                          {calculatedRelationships.nieces.map((niece, index) => (
+                            <div key={index} className="text-sm font-medium text-gray-900">• {niece}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {calculatedRelationships.nephews.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500">Nephews:</span>
+                        <div className="ml-2 space-y-1">
+                          {calculatedRelationships.nephews.map((nephew, index) => (
+                            <div key={index} className="text-sm font-medium text-gray-900">• {nephew}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {calculatedRelationships.cousins.length > 0 && (
+                      <div>
+                        <span className="text-xs text-gray-500">Cousins:</span>
+                        <div className="ml-2 space-y-1">
+                          {calculatedRelationships.cousins.map((cousin, index) => (
+                            <div key={index} className="text-sm font-medium text-gray-900">• {cousin}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>
