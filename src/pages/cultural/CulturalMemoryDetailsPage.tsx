@@ -65,7 +65,7 @@ export default function CulturalMemoryDetailsPage() {
           imageUrl: m.imageUrl,
           images: m.images,
           audioUrl: m.audioUrl,
-          participants: m.participants,
+          participants: typeof m.participants === 'string' ? [m.participants] : m.participants,
           tags: m.tags
         }))
 
