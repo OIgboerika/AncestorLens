@@ -39,7 +39,7 @@ export default function ProfilePage() {
     familyStats: { familyMembers: 0, memoriesUploaded: 0, burialSites: 0, profileViews: 0 }
   })
 
-  // Load real-time metrics
+  // Load real-time metrics with data cleanup
   const loadRealTimeMetrics = async (userId: string) => {
     try {
       // Load data from all services in parallel
@@ -54,9 +54,44 @@ export default function ProfilePage() {
       const localCulturalMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
       const localBurialSites = JSON.parse(localStorage.getItem('burialSites') || '[]')
 
+      // DATA CLEANUP: Remove orphaned Firestore data that doesn't exist in localStorage
+      // This fixes the issue where "Ezenwa Igboerika" exists in Firestore but not in localStorage
+      const validFamilyMembers = familyMembers.filter((firestoreMember: any) => 
+        localFamilyMembers.some((localMember: any) => 
+          localMember.id === firestoreMember.id || 
+          localMember.name === firestoreMember.name
+        )
+      )
+
+      // If there are orphaned Firestore members, clean them up
+      const orphanedMembers = familyMembers.filter((firestoreMember: any) => 
+        !localFamilyMembers.some((localMember: any) => 
+          localMember.id === firestoreMember.id || 
+          localMember.name === firestoreMember.name
+        )
+      )
+
+      if (orphanedMembers.length > 0) {
+        console.log('Found orphaned family members in Firestore:', orphanedMembers.map((m: any) => m.name))
+        
+        // Remove orphaned members from Firestore
+        for (const orphanedMember of orphanedMembers) {
+          try {
+            if (orphanedMember.id) {
+              await familyService.deleteFamilyMember(orphanedMember.id)
+              console.log(`Removed orphaned member: ${orphanedMember.name}`)
+            } else {
+              console.warn(`Cannot remove orphaned member ${orphanedMember.name}: missing ID`)
+            }
+          } catch (error) {
+            console.error(`Failed to remove orphaned member ${orphanedMember.name}:`, error)
+          }
+        }
+      }
+
       // Combine Firestore and localStorage data, removing duplicates
-      const allFamilyMembers = [...familyMembers, ...localFamilyMembers.filter((local: any) => 
-        !familyMembers.some(firestore => firestore.id === local.id)
+      const allFamilyMembers = [...validFamilyMembers, ...localFamilyMembers.filter((local: any) => 
+        !validFamilyMembers.some(firestore => firestore.id === local.id)
       )]
       
       const allCulturalMemories = [...culturalMemories, ...localCulturalMemories.filter((local: any) => 
@@ -67,7 +102,7 @@ export default function ProfilePage() {
         !burialSites.some(firestore => firestore.id === local.id)
       )]
 
-      // Update family stats with real data
+      // Update family stats with cleaned data
       setUserData(prev => ({
         ...prev,
         familyStats: {
@@ -88,6 +123,19 @@ export default function ProfilePage() {
     setRefreshing(true)
     try {
       await loadRealTimeMetrics(user.uid)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  // Manual cleanup function for orphaned data
+  const handleCleanupData = async () => {
+    if (!user) return
+    setRefreshing(true)
+    try {
+      console.log('Starting data cleanup...')
+      await loadRealTimeMetrics(user.uid)
+      console.log('Data cleanup completed!')
     } finally {
       setRefreshing(false)
     }
@@ -325,6 +373,10 @@ export default function ProfilePage() {
               <Button variant="outline" className="w-full justify-start" onClick={handleRefreshMetrics} disabled={refreshing}>
                 <RefreshCw className={`w-4 h-4 mr-3 ${refreshing ? 'animate-spin' : ''}`} /> 
                 {refreshing ? 'Refreshing...' : 'Refresh Metrics'}
+              </Button>
+              <Button variant="outline" className="w-full justify-start" onClick={handleCleanupData} disabled={refreshing}>
+                <RefreshCw className={`w-4 h-4 mr-3 ${refreshing ? 'animate-spin' : ''}`} /> 
+                {refreshing ? 'Cleaning...' : 'Cleanup Data'}
               </Button>
               <Button variant="outline" className="w-full justify-start" onClick={() => {
                 navigator.clipboard.writeText(window.location.href)
