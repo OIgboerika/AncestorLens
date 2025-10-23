@@ -267,7 +267,8 @@ const FamilyMemberDetailsPage = () => {
       father: '',
       mother: '',
       spouse: '',
-      children: [] as string[]
+      children: [] as string[],
+      siblings: [] as string[]
     }
     
     // Find father and mother - they have relationship 'Father'/'Mother' and their parentId points to current member
@@ -294,10 +295,33 @@ const FamilyMemberDetailsPage = () => {
       (m.relationship === 'Son' || m.relationship === 'Daughter' || m.relationship === 'Child')
     )
     
+    // Find siblings - they have relationship 'Brother'/'Sister' 
+    // For siblings, we need to find all members with Brother/Sister relationship
+    // and exclude the current member
+    const siblings = allMembers.filter(m => 
+      m.id !== currentMember.id && // Don't include self
+      (m.relationship === 'Brother' || m.relationship === 'Sister')
+    )
+    
     relationships.father = father?.name || ''
     relationships.mother = mother?.name || ''
     relationships.spouse = spouse?.name || ''
     relationships.children = children.map(c => c.name)
+    relationships.siblings = siblings.map(s => s.name)
+    
+    // Debug logging
+    console.log('Family Relationships Debug:', {
+      currentMember: { id: currentMember.id, name: currentMember.name, relationship: currentMember.relationship },
+      allMembers: allMembers.map(m => ({ id: m.id, name: m.name, relationship: m.relationship, parentId: m.parentId })),
+      relationships,
+      relationshipsCount: (
+        (relationships.father ? 1 : 0) +
+        (relationships.mother ? 1 : 0) +
+        (relationships.spouse ? 1 : 0) +
+        relationships.children.length +
+        relationships.siblings.length
+      )
+    })
     
     return relationships
   }, [memberData.id, memberData.parentId, memberData.relationship])
@@ -307,7 +331,8 @@ const FamilyMemberDetailsPage = () => {
       (calculatedRelationships.father ? 1 : 0) +
       (calculatedRelationships.mother ? 1 : 0) +
       (calculatedRelationships.spouse ? 1 : 0) +
-      calculatedRelationships.children.length
+      calculatedRelationships.children.length +
+      calculatedRelationships.siblings.length
     )
   }, [calculatedRelationships])
 
@@ -425,6 +450,17 @@ const FamilyMemberDetailsPage = () => {
                     <div key={index} className="text-sm font-medium text-gray-900">• {child}</div>
                   ))}
                   {calculatedRelationships.children.length === 0 && (
+                    <div className="text-sm text-gray-500">—</div>
+                  )}
+                </div>
+              </div>
+              <div className="border-t border-gray-200 pt-3">
+                <span className="text-sm text-gray-600">Siblings</span>
+                <div className="mt-2 space-y-1">
+                  {calculatedRelationships.siblings.map((sibling, index) => (
+                    <div key={index} className="text-sm font-medium text-gray-900">• {sibling}</div>
+                  ))}
+                  {calculatedRelationships.siblings.length === 0 && (
                     <div className="text-sm text-gray-500">—</div>
                   )}
                 </div>
