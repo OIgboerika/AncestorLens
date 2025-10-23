@@ -24,58 +24,11 @@ interface BurialSite {
   visible?: boolean
 }
 
-const DEFAULT_SITES: BurialSite[] = [
-  {
-    id: 1,
-    name: "Grandfather's Grave",
-    deceasedName: 'Samuel Doe',
-    birthYear: '1925',
-    deathYear: '1995',
-    location: 'Abuja Central Cemetery',
-    coordinates: { lat: 9.0765, lng: 7.3986 },
-    description: 'Final resting place of Samuel Doe, beloved grandfather',
-    visitNotes: 'Well maintained plot with a beautiful headstone',
-    lastVisit: 'March 15, 2024',
-    images: ['placeholder-headstone-1.jpg'],
-    familyAccess: ['John Doe', 'Grace Doe'],
-    visible: true
-  },
-  {
-    id: 2,
-    name: 'Family Burial Ground',
-    deceasedName: 'Mary Doe',
-    birthYear: '1930',
-    deathYear: '2000',
-    location: 'Enugu Burial Ground',
-    coordinates: { lat: 6.5244, lng: 7.4951 },
-    description: 'Traditional family burial site',
-    visitNotes: 'Located in the eastern section of the cemetery',
-    lastVisit: 'February 20, 2024',
-    images: ['placeholder-headstone-2.jpg'],
-    familyAccess: ['John Doe', 'Michael Doe'],
-    visible: true
-  },
-  {
-    id: 3,
-    name: "Uncle's Memorial",
-    deceasedName: 'Paul Doe',
-    birthYear: '1970',
-    deathYear: '2020',
-    location: 'Lagos Memorial Garden',
-    coordinates: { lat: 6.5244, lng: 3.3792 },
-    description: 'Memorial for beloved uncle who passed suddenly',
-    visitNotes: 'Peaceful location with flowers',
-    lastVisit: 'January 10, 2024',
-    images: ['placeholder-headstone-3.jpg'],
-    familyAccess: ['John Doe', 'David Doe'],
-    visible: true
-  }
-]
 
 const BurialSitesPage = () => {
   const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
-  const [sites, setSites] = useState<BurialSite[]>(DEFAULT_SITES)
+  const [sites, setSites] = useState<BurialSite[]>([])
   const [showMap, setShowMap] = useState(false)
   const [selectedSite, setSelectedSite] = useState<BurialSite | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -104,19 +57,13 @@ const BurialSitesPage = () => {
   const [siteToDelete, setSiteToDelete] = useState<BurialSite | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Load from Firestore and merge with defaults
+  // Load from Firestore or localStorage
   useEffect(() => {
     const loadBurialSites = async () => {
       if (!user?.uid) {
         // Fallback to localStorage if no user
         const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
-        if (saved.length > 0) {
-          const defaultIds = new Set(DEFAULT_SITES.map(s => s.id))
-          const onlyNew = saved.filter(s => !defaultIds.has(s.id))
-          setSites([...DEFAULT_SITES, ...onlyNew])
-        } else {
-          setSites(DEFAULT_SITES)
-        }
+        setSites(saved)
         setLoading(false)
         return
       }
@@ -142,23 +89,12 @@ const BurialSitesPage = () => {
           visible: site.visible !== undefined ? site.visible : true
         }))
 
-        // Merge with default sites (only if Firestore is empty)
-        if (convertedSites.length === 0) {
-          setSites(DEFAULT_SITES)
-        } else {
-          setSites(convertedSites)
-        }
+        setSites(convertedSites)
       } catch (error) {
         console.error('Error loading burial sites:', error)
         // Fallback to localStorage
         const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
-        if (saved.length > 0) {
-          const defaultIds = new Set(DEFAULT_SITES.map(s => s.id))
-          const onlyNew = saved.filter(s => !defaultIds.has(s.id))
-          setSites([...DEFAULT_SITES, ...onlyNew])
-        } else {
-          setSites(DEFAULT_SITES)
-        }
+        setSites(saved)
       } finally {
         setLoading(false)
       }
