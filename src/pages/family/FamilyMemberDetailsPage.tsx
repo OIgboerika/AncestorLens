@@ -16,7 +16,7 @@ import { familyService } from '../../firebase/services/familyService'
 import { geocodingService } from '../../services/geocodingService'
 
 interface MemberDetails {
-  id: number
+  id: number | string
   name: string
   role: 'Living' | 'Deceased'
   birthYear?: string
@@ -36,6 +36,7 @@ interface MemberDetails {
   profileImage?: string | null
   image?: string | null
   relationship?: string
+  parentId?: string | number
   heritageTags?: string[]
   relationships?: {
     father?: string
@@ -257,16 +258,58 @@ const FamilyMemberDetailsPage = () => {
 
   const initials = useMemo(() => memberData.name.split(' ').map(n => n[0]).join(''), [memberData.name])
 
-  const relationshipsCount = useMemo(() => {
-    const r = memberData.relationships
-    if (!r) return 0
-    return (
-      (r.father ? 1 : 0) +
-      (r.mother ? 1 : 0) +
-      (r.spouse ? 1 : 0) +
-      (r.children?.length || 0)
+  // Calculate relationships dynamically from all family members
+  const calculatedRelationships = useMemo(() => {
+    const allMembers: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+    const currentMember = memberData
+    
+    const relationships = {
+      father: '',
+      mother: '',
+      spouse: '',
+      children: [] as string[]
+    }
+    
+    // Find father and mother - they have relationship 'Father'/'Mother' and their parentId points to current member
+    // OR current member has parentId pointing to them
+    const father = allMembers.find(m => 
+      m.relationship === 'Father' && 
+      (m.parentId === String(currentMember.id) || String(m.id) === currentMember.parentId)
     )
-  }, [memberData.relationships])
+    
+    const mother = allMembers.find(m => 
+      m.relationship === 'Mother' && 
+      (m.parentId === String(currentMember.id) || String(m.id) === currentMember.parentId)
+    )
+    
+    // Find spouse - they have relationship 'Husband'/'Wife'/'Spouse' and their parentId points to current member
+    const spouse = allMembers.find(m => 
+      (m.relationship === 'Husband' || m.relationship === 'Wife' || m.relationship === 'Spouse') &&
+      m.parentId === String(currentMember.id)
+    )
+    
+    // Find children - their parentId points to current member and they are 'Son'/'Daughter'/'Child'
+    const children = allMembers.filter(m => 
+      m.parentId === String(currentMember.id) &&
+      (m.relationship === 'Son' || m.relationship === 'Daughter' || m.relationship === 'Child')
+    )
+    
+    relationships.father = father?.name || ''
+    relationships.mother = mother?.name || ''
+    relationships.spouse = spouse?.name || ''
+    relationships.children = children.map(c => c.name)
+    
+    return relationships
+  }, [memberData.id, memberData.parentId, memberData.relationship])
+
+  const relationshipsCount = useMemo(() => {
+    return (
+      (calculatedRelationships.father ? 1 : 0) +
+      (calculatedRelationships.mother ? 1 : 0) +
+      (calculatedRelationships.spouse ? 1 : 0) +
+      calculatedRelationships.children.length
+    )
+  }, [calculatedRelationships])
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -365,23 +408,23 @@ const FamilyMemberDetailsPage = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Father</span>
-                <span className="text-sm font-medium text-gray-900">{memberData.relationships?.father || '—'}</span>
+                <span className="text-sm font-medium text-gray-900">{calculatedRelationships.father || '—'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Mother</span>
-                <span className="text-sm font-medium text-gray-900">{memberData.relationships?.mother || '—'}</span>
+                <span className="text-sm font-medium text-gray-900">{calculatedRelationships.mother || '—'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Spouse</span>
-                <span className="text-sm font-medium text-gray-900">{memberData.relationships?.spouse || '—'}</span>
+                <span className="text-sm font-medium text-gray-900">{calculatedRelationships.spouse || '—'}</span>
               </div>
               <div className="border-t border-gray-200 pt-3">
                 <span className="text-sm text-gray-600">Children</span>
                 <div className="mt-2 space-y-1">
-                  {(memberData.relationships?.children || []).map((child, index) => (
+                  {calculatedRelationships.children.map((child, index) => (
                     <div key={index} className="text-sm font-medium text-gray-900">• {child}</div>
                   ))}
-                  {(!memberData.relationships?.children || memberData.relationships.children.length === 0) && (
+                  {calculatedRelationships.children.length === 0 && (
                     <div className="text-sm text-gray-500">—</div>
                   )}
                 </div>
