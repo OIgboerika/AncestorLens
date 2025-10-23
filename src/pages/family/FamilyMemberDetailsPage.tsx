@@ -295,33 +295,32 @@ const FamilyMemberDetailsPage = () => {
       (m.relationship === 'Son' || m.relationship === 'Daughter' || m.relationship === 'Child')
     )
     
-    // Find siblings - they have relationship 'Brother'/'Sister' 
-    // For siblings, we need to find all members with Brother/Sister relationship
-    // and exclude the current member
-    const siblings = allMembers.filter(m => 
-      m.id !== currentMember.id && // Don't include self
-      (m.relationship === 'Brother' || m.relationship === 'Sister')
-    )
+    // Find siblings - reciprocal relationship detection
+    const siblings = allMembers.filter(m => {
+      if (m.id === currentMember.id) return false; // Don't include self
+      
+      // Case 1: Both currentMember and 'm' share the same parentId
+      if (currentMember.parentId && m.parentId && currentMember.parentId === m.parentId) {
+        return true;
+      }
+      
+      // Case 2: One is 'Self' and the other is 'Brother' or 'Sister' (relative to 'Self')
+      // This handles the reciprocal display for the primary user and their direct siblings
+      if (
+        (currentMember.relationship === 'Self' && (m.relationship === 'Brother' || m.relationship === 'Sister')) ||
+        (m.relationship === 'Self' && (currentMember.relationship === 'Brother' || currentMember.relationship === 'Sister'))
+      ) {
+        return true;
+      }
+      
+      return false;
+    })
     
     relationships.father = father?.name || ''
     relationships.mother = mother?.name || ''
     relationships.spouse = spouse?.name || ''
     relationships.children = children.map(c => c.name)
     relationships.siblings = siblings.map(s => s.name)
-    
-    // Debug logging
-    console.log('Family Relationships Debug:', {
-      currentMember: { id: currentMember.id, name: currentMember.name, relationship: currentMember.relationship },
-      allMembers: allMembers.map(m => ({ id: m.id, name: m.name, relationship: m.relationship, parentId: m.parentId })),
-      relationships,
-      relationshipsCount: (
-        (relationships.father ? 1 : 0) +
-        (relationships.mother ? 1 : 0) +
-        (relationships.spouse ? 1 : 0) +
-        relationships.children.length +
-        relationships.siblings.length
-      )
-    })
     
     return relationships
   }, [memberData.id, memberData.parentId, memberData.relationship])
