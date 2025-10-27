@@ -225,8 +225,8 @@ const FamilyMemberDetailsPage = () => {
           ...(memberData.email && { email: memberData.email }),
           ...(memberData.phone && { phone: memberData.phone }),
           ...(memberData.bio && { bio: memberData.bio }),
-          ...((memberData.image || memberData.profileImage) && { image: memberData.image || memberData.profileImage }),
-          ...(memberData.heritageTags && { heritageTags: memberData.heritageTags }),
+          ...((memberData.image || memberData.profileImage) && { image: (memberData.image || memberData.profileImage) as string }),
+          ...(memberData.heritageTags && memberData.heritageTags.length > 0 && { heritageTags: memberData.heritageTags }),
         }
         
         console.log('Updating Firestore with:', firestoreUpdates)
