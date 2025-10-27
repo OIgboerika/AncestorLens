@@ -85,10 +85,11 @@ const FamilyMemberDetailsPage = () => {
       return
     }
 
-    // 2) From localStorage by id
-    const numericId = Number(id)
+    // 2) From localStorage by id (handle both string and numeric IDs)
     const savedMembers: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
-    const found = savedMembers.find(m => Number(m.id) === numericId)
+    console.log('Searching localStorage for id:', id, 'Available members:', savedMembers.map(m => ({ id: m.id, name: m.name })))
+    
+    const found = savedMembers.find(m => String(m.id) === String(id))
     if (found) {
       console.log('Loaded member from localStorage:', found)
       setMemberData({ ...found })
@@ -96,7 +97,7 @@ const FamilyMemberDetailsPage = () => {
     }
 
     // 3) Fallback mock
-    console.log('Using mock member data')
+    console.warn('Member not found in localStorage, using mock member data. Search ID:', id)
     setMemberData(MOCK_MEMBER)
   }, [id, location.state])
 
