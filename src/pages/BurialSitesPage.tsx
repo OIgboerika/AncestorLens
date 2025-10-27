@@ -777,8 +777,16 @@ const BurialSitesPage = () => {
           const isVisible = site.visible !== undefined ? site.visible : true
           return (
             <Card key={site.id} className="hover:shadow-lg transition-shadow relative">
-              {/* Eye icon - positioned above blur overlay */}
-              <div className="absolute top-4 right-4 z-20">
+              {/* Top right buttons - Eye icon and Share button */}
+              <div className="absolute top-4 right-4 z-20 flex space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => handleShareSite(site)}
+                  className="bg-white/90 hover:bg-white shadow-sm"
+                >
+                  <Share2 className="w-4 h-4" />
+                </Button>
                 <Button 
                   variant="ghost" 
                   size="sm"
@@ -821,7 +829,7 @@ const BurialSitesPage = () => {
 
               {/* Site Details */}
               <div className="lg:col-span-2">
-                <div className="flex justify-between items-start mb-4">
+                <div className="mb-4">
                   <div>
                     <h2 className="text-xl font-semibold text-gray-900 mb-2">{site.name}</h2>
                     <p className="text-lg text-gray-600 mb-2">{site.deceasedName}</p>
@@ -829,16 +837,6 @@ const BurialSitesPage = () => {
                       <Calendar className="w-4 h-4 mr-2" />
                       <span>{(site.birthYear || '—')} - {(site.deathYear || '—')}</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => handleShareSite(site)}
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
 
