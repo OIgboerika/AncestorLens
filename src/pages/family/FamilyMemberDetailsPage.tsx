@@ -80,6 +80,7 @@ const FamilyMemberDetailsPage = () => {
   useEffect(() => {
     // 1) From navigation state
     if (location.state?.member) {
+      console.log('Loaded member from navigation state:', location.state.member)
       setMemberData({ ...location.state.member })
       return
     }
@@ -89,11 +90,13 @@ const FamilyMemberDetailsPage = () => {
     const savedMembers: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
     const found = savedMembers.find(m => Number(m.id) === numericId)
     if (found) {
+      console.log('Loaded member from localStorage:', found)
       setMemberData({ ...found })
       return
     }
 
     // 3) Fallback mock
+    console.log('Using mock member data')
     setMemberData(MOCK_MEMBER)
   }, [id, location.state])
 
@@ -200,38 +203,52 @@ const FamilyMemberDetailsPage = () => {
 
   const handleSave = async () => {
     try {
+      console.log('Saving member data:', memberData)
+      
       // Update Firestore if we have an id string (Firestore doc id pattern)
       if (typeof memberData.id === 'string') {
-        await familyService.updateFamilyMember(memberData.id, {
+        const firestoreUpdates = {
           name: memberData.name,
           role: memberData.role,
-          birthYear: memberData.birthYear,
-          deathYear: memberData.deathYear,
-          birthPlace: memberData.birthPlace,
-          deathPlace: memberData.deathPlace,
-          location: memberData.location,
-          city: memberData.city,
-          state: memberData.state,
-          country: memberData.country,
-          address: memberData.address,
-          coordinates: memberData.coordinates,
-          occupation: memberData.occupation,
-          email: memberData.email,
-          phone: memberData.phone,
-          bio: memberData.bio,
-          image: memberData.image || memberData.profileImage || undefined,
+          birthYear: memberData.birthYear || null,
+          deathYear: memberData.deathYear || null,
+          birthPlace: memberData.birthPlace || null,
+          deathPlace: memberData.deathPlace || null,
+          location: memberData.location || null,
+          city: memberData.city || null,
+          state: memberData.state || null,
+          country: memberData.country || null,
+          address: memberData.address || null,
+          coordinates: memberData.coordinates || null,
+          occupation: memberData.occupation || null,
+          email: memberData.email || null,
+          phone: memberData.phone || null,
+          bio: memberData.bio || null,
+          image: memberData.image || memberData.profileImage || null,
           heritageTags: memberData.heritageTags || [],
-        })
+        }
+        
+        console.log('Updating Firestore with:', firestoreUpdates)
+        await familyService.updateFamilyMember(memberData.id, firestoreUpdates)
       }
+      
+      // Update localStorage
       const all: MemberDetails[] = JSON.parse(localStorage.getItem('familyMembers') || '[]')
       const idx = all.findIndex(m => String(m.id) === String(memberData.id))
-      if (idx !== -1) { all[idx] = { ...all[idx], ...memberData } }
+      if (idx !== -1) { 
+        const updatedMember = { ...all[idx], ...memberData }
+        all[idx] = updatedMember
+        console.log('Updated localStorage member:', updatedMember)
+      } else {
+        console.warn('Member not found in localStorage:', memberData.id)
+      }
       localStorage.setItem('familyMembers', JSON.stringify(all))
+      console.log('Successfully saved to both Firestore and localStorage')
     } catch (err) {
       console.error('Failed to persist member', err)
+      alert('Failed to save changes. Please try again.')
     }
     setIsEditing(false)
-    console.log('Updated member data:', memberData)
   }
 
   const handleDelete = async () => {
