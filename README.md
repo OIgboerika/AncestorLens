@@ -25,24 +25,28 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
 ### ✨ Key Features
 
 - **🌳 Interactive Family Trees**
+
   - Static and draggable family tree views
   - Real-time relationship mapping
   - Comprehensive family member profiles
   - Location-based family member mapping
 
 - **🗺️ Burial Site Mapping**
+
   - GPS coordinate recording
   - Interactive map visualization
   - Burial site management with photos
   - Privacy controls for sensitive locations
 
 - **📚 Cultural Memory Archive**
+
   - Audio and image memory uploads
   - Oral storytelling preservation
   - Category-based organization
   - Download and sharing capabilities
 
 - **🔒 Privacy & Security**
+
   - Firebase Authentication
   - Role-based access control
   - Data encryption and secure storage
@@ -58,6 +62,7 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 18** - Modern React with hooks
 - **TypeScript** - Type-safe development
 - **Vite** - Fast build tool and dev server
@@ -66,6 +71,7 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
 - **Lucide React** - Beautiful icons
 
 ### Backend & Services
+
 - **Firebase** - Authentication, Firestore Database, Storage
 - **Cloudinary** - Image and media management
 - **Leaflet** - Interactive maps
@@ -73,12 +79,14 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
 - **Google Maps API** - Geolocation services
 
 ### Development Tools
+
 - **Bun** - Fast package manager
 - **ESLint** - Code linting
 - **PostCSS** - CSS processing
 - **Autoprefixer** - CSS vendor prefixes
 
 ### Deployment
+
 - **Vercel** - Frontend hosting
 - **Firebase Hosting** - Backend services
 - **GitHub Actions** - CI/CD pipeline
@@ -149,6 +157,7 @@ VITE_CLOUDINARY_UPLOAD_PRESET=ml_default
 ```
 
 **How to get these values:**
+
 - **Firebase:** Create a project at [Firebase Console](https://console.firebase.google.com/), then go to Project Settings > General > Your apps > Web app
 - **Cloudinary:** Sign up at [Cloudinary](https://cloudinary.com/) and get your credentials from the Dashboard
 
@@ -243,6 +252,10 @@ These files configure the build tools and development environment:
   - `Cultural Memories Upload.png`
   - `User Profile.png`
   - `Privacy Settings.png`
+- **`Testing Screenshots/`** - **📁 Comprehensive testing documentation folder**
+  - Contains screenshots demonstrating testing strategies, different data values, and performance across different hardware/software specifications
+  - Includes validation of functionality under various scenarios, error handling, responsive design, and cross-browser compatibility
+  - **All testing results and screenshots can be found in this folder**
 
 ### Source Code Structure
 
@@ -291,7 +304,7 @@ These files configure the build tools and development environment:
 - [Dashboard](./Screens/Dashboard.png)
 - [Family Tree Overview](./Screens/Family%20Tree.png)
 - [Family Tree Builder](./Screens/Family%20Tree%20Builder.png)
-- [Family Member Details](./Screens/Family%20Tree%20(Member%20Details).png)
+- [Family Member Details](<./Screens/Family%20Tree%20(Member%20Details).png>)
 
 ### Burial Sites & Cultural Memory
 
@@ -303,6 +316,22 @@ These files configure the build tools and development environment:
 ### Privacy & Settings
 
 - [Privacy Settings](./Screens/Privacy%20Settings.png)
+
+---
+
+## 🧪 Testing Results & Screenshots
+
+**📁 All testing screenshots can be found in the [`Testing Screenshots/`](./Testing%20Screenshots/) folder.**
+
+This folder contains comprehensive testing documentation demonstrating:
+
+- **✅ Testing Strategies** - Functionality under different testing scenarios, error handling, and edge cases
+- **📊 Different Data Values** - Empty vs. populated states, various data types, and media formats
+- **💻 Different Specifications** - Responsive design across desktop, tablet, and mobile devices, plus cross-browser compatibility
+
+The testing screenshots validate the application's performance, functionality, and user experience across multiple scenarios and platforms.
+
+**🔍 View Testing Screenshots:** [Testing Screenshots Folder](./Testing%20Screenshots/)
 
 ---
 
