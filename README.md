@@ -6,11 +6,17 @@
 [![Tech Stack](https://img.shields.io/badge/Tech%20Stack-React%20%7C%20Firebase%20%7C%20Vercel-blue)](https://github.com/OIgboerika/AncestorLens)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-## 🎬 Demo
+---
 
-**Live Application:** [ancestor-lens.vercel.app](https://ancestor-lens.vercel.app)
+## 🌐 Live Application
 
-**Demo Video:** [Watch Frontend Demo](https://drive.google.com/file/d/1wljp41jv1SPgqJ_uNIqNwbXvaryf2Axu/view?usp=sharing)
+**🔗 Deployed Version:** [https://ancestor-lens.vercel.app](https://ancestor-lens.vercel.app)
+
+**📹 Demo Video:** [Watch 5-Minute Platform Demo](https://drive.google.com/file/d/1zNHY5NSfNBXiL2WZ0k0dX_th7B_DOEXr/view?usp=sharing)
+
+> **Note:** The demo video focuses on core functionalities including Family Tree management, Burial Site mapping, and Cultural Memory archive features.
+
+---
 
 ## 📖 Description
 
@@ -19,28 +25,24 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
 ### ✨ Key Features
 
 - **🌳 Interactive Family Trees**
-
   - Static and draggable family tree views
   - Real-time relationship mapping
   - Comprehensive family member profiles
   - Location-based family member mapping
 
 - **🗺️ Burial Site Mapping**
-
   - GPS coordinate recording
   - Interactive map visualization
   - Burial site management with photos
   - Privacy controls for sensitive locations
 
 - **📚 Cultural Memory Archive**
-
   - Audio and image memory uploads
   - Oral storytelling preservation
   - Category-based organization
   - Download and sharing capabilities
 
 - **🔒 Privacy & Security**
-
   - Firebase Authentication
   - Role-based access control
   - Data encryption and secure storage
@@ -51,10 +53,11 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
   - Cross-platform compatibility
   - Modern UI/UX with Tailwind CSS
 
+---
+
 ## 🛠️ Tech Stack
 
 ### Frontend
-
 - **React 18** - Modern React with hooks
 - **TypeScript** - Type-safe development
 - **Vite** - Fast build tool and dev server
@@ -63,7 +66,6 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
 - **Lucide React** - Beautiful icons
 
 ### Backend & Services
-
 - **Firebase** - Authentication, Firestore Database, Storage
 - **Cloudinary** - Image and media management
 - **Leaflet** - Interactive maps
@@ -71,54 +73,64 @@ AncestorLens is a full-stack web application that addresses the unique needs of 
 - **Google Maps API** - Geolocation services
 
 ### Development Tools
-
 - **Bun** - Fast package manager
 - **ESLint** - Code linting
 - **PostCSS** - CSS processing
 - **Autoprefixer** - CSS vendor prefixes
 
 ### Deployment
-
 - **Vercel** - Frontend hosting
 - **Firebase Hosting** - Backend services
 - **GitHub Actions** - CI/CD pipeline
+
+---
 
 ## 🚀 Installation & Setup
 
 ### Prerequisites
 
-- **Node.js** (version 16 or higher)
-- **Bun** package manager
-- **Firebase CLI**
-- **Git**
+Before you begin, ensure you have the following installed:
 
-### Step-by-Step Installation
+- **Node.js** (version 16 or higher) - [Download Node.js](https://nodejs.org/)
+- **Bun** package manager - [Install Bun](https://bun.sh/)
+- **Firebase CLI** - Will be installed in step 4
+- **Git** - [Download Git](https://git-scm.com/)
 
-#### 1. Clone the Repository
+### Step-by-Step Installation Instructions
+
+#### Step 1: Clone the Repository
+
+Open your terminal and run:
 
 ```bash
 git clone https://github.com/OIgboerika/AncestorLens.git
 cd AncestorLens
 ```
 
-#### 2. Install Dependencies
+#### Step 2: Install Dependencies
+
+Install all required dependencies using Bun (recommended):
 
 ```bash
-# Using Bun (recommended)
 bun install
+```
 
-# Alternative: Using npm
+**Alternative:** If you prefer npm, you can use:
+
+```bash
 npm install
 ```
 
-#### 3. Environment Configuration
+#### Step 3: Configure Environment Variables
+
+Create a local environment file:
 
 ```bash
-# Copy environment template
+# Copy the environment template
 cp env.example .env.local
 ```
 
-Edit `.env.local` with your configuration:
+Open `.env.local` in your text editor and fill in your configuration values:
 
 ```env
 # Firebase Configuration
@@ -136,32 +148,51 @@ VITE_CLOUDINARY_API_SECRET=your_api_secret
 VITE_CLOUDINARY_UPLOAD_PRESET=ml_default
 ```
 
-#### 4. Firebase Setup
+**How to get these values:**
+- **Firebase:** Create a project at [Firebase Console](https://console.firebase.google.com/), then go to Project Settings > General > Your apps > Web app
+- **Cloudinary:** Sign up at [Cloudinary](https://cloudinary.com/) and get your credentials from the Dashboard
+
+#### Step 4: Firebase CLI Setup
+
+Install Firebase CLI globally:
 
 ```bash
-# Install Firebase CLI globally
 npm install -g firebase-tools
+```
 
-# Login to Firebase
+Login to Firebase:
+
+```bash
 firebase login
+```
 
-# Initialize Firebase (if not already done)
+Initialize Firebase (if not already done):
+
+```bash
 firebase init
 ```
 
-#### 5. Start Development Server
+Follow the prompts to configure your Firebase project.
+
+#### Step 5: Start the Development Server
+
+Run the development server:
 
 ```bash
-# Using Bun
+# Using Bun (recommended)
 bun run dev
 
 # Alternative: Using npm
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at **`http://localhost:5173`**
 
-#### 6. Build for Production
+Open your browser and navigate to the URL to see the application running.
+
+#### Step 6: Build for Production (Optional)
+
+To create a production build:
 
 ```bash
 # Using Bun
@@ -171,39 +202,81 @@ bun run build
 npm run build
 ```
 
-## 📁 Project Structure
+The production files will be generated in the `dist/` folder.
 
-```
-AncestorLens/
-├── public/                 # Static assets
-│   ├── images/            # Application images
-│   └── logo.png           # Application logo
-├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── ui/           # Base UI components
-│   │   ├── family/       # Family tree components
-│   │   └── maps/         # Map-related components
-│   ├── contexts/         # React contexts
-│   │   └── AuthContext.tsx
-│   ├── firebase/         # Firebase configuration and services
-│   │   ├── config.ts
-│   │   └── services/     # Firestore services
-│   ├── pages/            # Application pages
-│   │   ├── auth/         # Authentication pages
-│   │   ├── family/       # Family tree pages
-│   │   ├── cultural/     # Cultural memories pages
-│   │   └── ...
-│   ├── services/         # External service integrations
-│   │   ├── cloudinaryService.ts
-│   │   └── geocodingService.ts
-│   └── App.tsx          # Main application component
-├── Screens/              # Application screenshots
-├── package.json         # Dependencies and scripts
-├── vercel.json          # Vercel deployment configuration
-├── tailwind.config.js   # Tailwind CSS configuration
-├── tsconfig.json        # TypeScript configuration
-└── vite.config.ts       # Vite configuration
-```
+---
+
+## 📁 Related Files to the Project
+
+### Configuration Files
+
+These files configure the build tools and development environment:
+
+- **`package.json`** - Project dependencies and npm scripts
+- **`package-lock.json`** - Locked dependency versions
+- **`vercel.json`** - Vercel deployment configuration
+- **`tailwind.config.js`** - Tailwind CSS configuration
+- **`tsconfig.json`** - TypeScript compiler configuration
+- **`tsconfig.node.json`** - TypeScript config for Node.js tools
+- **`vite.config.ts`** - Vite build tool configuration
+- **`postcss.config.js`** - PostCSS configuration
+- **`.gitignore`** - Git ignore patterns
+
+### Environment Files
+
+- **`env.example`** - Template for environment variables (copy this to `.env.local`)
+- **`.env.local`** - Local environment variables (create this file, not committed to git)
+
+### Documentation Files
+
+- **`README.md`** - This documentation file
+- **`Screens/`** - Directory containing application screenshots
+  - `Sign Up.png`
+  - `Log In.png`
+  - `Dashboard.png`
+  - `Family Tree.png`
+  - `Family Tree Builder.png`
+  - `Family Tree (Member Details).png`
+  - `Burial Sites.png`
+  - `Cultural Memories.png`
+  - `Cultural Memory Details.png`
+  - `Cultural Memories Upload.png`
+  - `User Profile.png`
+  - `Privacy Settings.png`
+
+### Source Code Structure
+
+- **`src/App.tsx`** - Main application component and routing
+- **`src/contexts/AuthContext.tsx`** - Authentication context provider
+- **`src/firebase/config.ts`** - Firebase configuration
+- **`src/firebase/services/`** - Firestore service files
+  - `familyService.ts` - Family member data operations
+  - `burialSiteService.ts` - Burial site data operations
+  - `culturalMemoryService.ts` - Cultural memory data operations
+  - `activityService.ts` - Activity tracking
+  - `firestore.ts` - Generic Firestore operations
+- **`src/pages/`** - Application page components
+  - `auth/` - Authentication pages (SignUp, Login)
+  - `family/` - Family tree pages (Overview, Builder, Details)
+  - `cultural/` - Cultural memory pages (List, Upload, Details)
+  - `BurialSitesPage.tsx` - Burial sites management
+  - `DashboardPage.tsx` - User dashboard
+  - `ProfilePage.tsx` - User profile
+  - `PrivacySettingsPage.tsx` - Privacy settings
+- **`src/components/`** - Reusable UI components
+  - `ui/` - Base UI components (Button, Card, etc.)
+  - `family/` - Family tree components
+  - `maps/` - Map-related components
+- **`src/services/`** - External service integrations
+  - `cloudinaryService.ts` - Cloudinary image upload
+  - `geocodingService.ts` - Address geocoding
+
+### Static Assets
+
+- **`public/images/`** - Application images and logos
+- **`index.html`** - HTML entry point
+
+---
 
 ## 🎨 Key Features & Screenshots
 
@@ -218,7 +291,7 @@ AncestorLens/
 - [Dashboard](./Screens/Dashboard.png)
 - [Family Tree Overview](./Screens/Family%20Tree.png)
 - [Family Tree Builder](./Screens/Family%20Tree%20Builder.png)
-- [Family Member Details](<./Screens/Family%20Tree%20(Member%20Details).png>)
+- [Family Member Details](./Screens/Family%20Tree%20(Member%20Details).png)
 
 ### Burial Sites & Cultural Memory
 
@@ -230,6 +303,8 @@ AncestorLens/
 ### Privacy & Settings
 
 - [Privacy Settings](./Screens/Privacy%20Settings.png)
+
+---
 
 ## 🚀 Deployment
 
@@ -274,6 +349,26 @@ AncestorLens/
    firebase deploy --only hosting
    ```
 
+---
+
+## 📋 Available Scripts
+
+```bash
+# Development
+bun run dev          # Start development server
+bun run build        # Build for production
+bun run preview      # Preview production build
+bun run lint         # Run ESLint
+
+# Alternative with npm
+npm run dev
+npm run build
+npm run preview
+npm run lint
+```
+
+---
+
 ## 🔧 Development Guidelines
 
 ### Code Standards
@@ -298,51 +393,7 @@ AncestorLens/
 - Test Firebase authentication flows
 - Validate data persistence and synchronization
 
-## 📋 Available Scripts
-
-```bash
-# Development
-bun run dev          # Start development server
-bun run build        # Build for production
-bun run preview      # Preview production build
-bun run lint         # Run ESLint
-
-# Alternative with npm
-npm run dev
-npm run build
-npm run preview
-npm run lint
-```
-
-## 🔗 Related Files
-
-### Configuration Files
-
-- `package.json` - Dependencies and scripts
-- `vercel.json` - Vercel deployment configuration
-- `tailwind.config.js` - Tailwind CSS configuration
-- `tsconfig.json` - TypeScript configuration
-- `vite.config.ts` - Vite build configuration
-- `postcss.config.js` - PostCSS configuration
-
-### Environment Files
-
-- `env.example` - Environment variables template
-- `.env.local` - Local environment variables (create this)
-
-### Documentation
-
-- `README.md` - This file
-- `Screens/` - Application screenshots
-- `public/images/` - Application assets
-
-### Key Source Files
-
-- `src/App.tsx` - Main application component
-- `src/contexts/AuthContext.tsx` - Authentication context
-- `src/firebase/config.ts` - Firebase configuration
-- `src/pages/` - Application pages
-- `src/components/` - Reusable components
+---
 
 ## 🤝 Contributing
 
@@ -352,9 +403,13 @@ npm run lint
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
 
 ## 👨‍💻 Author
 
@@ -362,6 +417,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - GitHub: [@OIgboerika](https://github.com/OIgboerika)
 - Email: igboerikaonochie121@gmail.com
+
+---
 
 ## 🙏 Acknowledgments
 
