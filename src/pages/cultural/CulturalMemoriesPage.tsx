@@ -138,7 +138,7 @@ export default function CulturalMemoriesPage() {
               {m.type === 'audio' ? (
                 <div className="aspect-video rounded-lg bg-gradient-to-br from-ancestor-primary/10 to-ancestor-secondary/10 flex items-center justify-center relative">
                   <button className="w-12 h-12 rounded-full bg-white shadow flex items-center justify-center hover:scale-105 transition">
-                    <Play className="w-6 h-6 text-ancestor-primary" />
+                    <Headphones className="w-6 h-6 text-ancestor-primary" />
                   </button>
                   {m.duration && (
                     <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/60 text-white text-xs">{m.duration}</div>
