@@ -52,13 +52,13 @@ function Home() {
 
         {/* Stacked showcase (images) */}
         <div className="mt-14 md:mt-20">
-          <div className="relative mx-auto max-w-5xl h-80 md:h-96">
+          <div className="relative mx-auto max-w-5xl h-64 md:h-72">
             {/* Images served from /public/landing-page-images/ */}
-            <img src="/landing-page-images/abazie-uchenna-fedE6gJVSRA-unsplash.jpg" alt="Showcase 1" className="absolute left-4 top-8 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-6deg]" />
-            <img src="/landing-page-images/eyo-archibong-RJo9OowwG4g-unsplash.jpg" alt="Showcase 2" className="absolute left-36 md:left-56 top-2 w-44 md:w-64 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[4deg]" />
-            <img src="/landing-page-images/joshua-duneebon-G8fEocK6g4w-unsplash.jpg" alt="Showcase 3" className="absolute left-64 md:left-[26rem] top-10 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-2deg]" />
-            <img src="/landing-page-images/lisa-marie-theck-igdYA2SwV8E-unsplash.jpg" alt="Showcase 4" className="absolute left-12 md:left-24 top-40 md:top-48 w-44 md:w-64 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[3deg]" />
-            <img src="/landing-page-images/muhammad-taha-ibrahim-HfC8mUqulJ8-unsplash.jpg" alt="Showcase 5" className="absolute left-60 md:left-[22rem] top-48 md:top-56 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-5deg]" />
+            <img src="/landing-page-images/abazie-uchenna-fedE6gJVSRA-unsplash.jpg" alt="Showcase 1" className="absolute left-4 top-10 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-6deg]" />
+            <img src="/landing-page-images/eyo-archibong-RJo9OowwG4g-unsplash.jpg" alt="Showcase 2" className="absolute left-36 md:left-56 top-8 w-44 md:w-64 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[4deg]" />
+            <img src="/landing-page-images/joshua-duneebon-G8fEocK6g4w-unsplash.jpg" alt="Showcase 3" className="absolute left-64 md:left-[26rem] top-9 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-2deg]" />
+            <img src="/landing-page-images/lisa-marie-theck-igdYA2SwV8E-unsplash.jpg" alt="Showcase 4" className="absolute left-[22rem] md:left-[34rem] top-8 w-44 md:w-64 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[3deg]" />
+            <img src="/landing-page-images/muhammad-taha-ibrahim-HfC8mUqulJ8-unsplash.jpg" alt="Showcase 5" className="absolute left-[32rem] md:left-[44rem] top-11 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-5deg]" />
           </div>
         </div>
       </div>
