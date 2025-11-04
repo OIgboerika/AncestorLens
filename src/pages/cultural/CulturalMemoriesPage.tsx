@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Play, Calendar, User, MapPin, SlidersHorizontal, Image as ImageIcon, Headphones, Trash2, AlertTriangle, BookOpen } from 'lucide-react'
+import { Plus, Search, Calendar, User, MapPin, SlidersHorizontal, Image as ImageIcon, Headphones, Trash2, AlertTriangle, BookOpen } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import { useAuth } from '../../contexts/AuthContext'
