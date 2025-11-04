@@ -39,25 +39,7 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
   useEffect(() => {
     if (!mapRef.current) return
 
-    // Add global navigation function
-    (window as any).navigateToMemberDetails = (id: string, name: string, relationship: string, role: string, birthYear: string, deathYear: string, location: string, city: string, state: string, country: string, address: string, coordinates: string) => {
-      const memberData = {
-        id,
-        name,
-        relationship,
-        role: role as 'Living' | 'Deceased',
-        birthYear: birthYear || undefined,
-        deathYear: deathYear || undefined,
-        location: location || undefined,
-        city: city || undefined,
-        state: state || undefined,
-        country: country || undefined,
-        address: address || undefined,
-        coordinates: coordinates ? JSON.parse(coordinates) : undefined
-      }
-      
-      navigate(`/family-tree/member/${id}`, { state: { member: memberData } })
-    }
+    // No global navigation; popup will only display info per requirements
 
     // Initialize map
     const map = L.map(mapRef.current).setView([0, 0], 2)
@@ -89,7 +71,11 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         if (member.state) locationParts.push(member.state)
         if (member.country) locationParts.push(member.country)
         
-        const fullLocation = locationParts.length > 0 ? locationParts.join(', ') : member.location || 'Location not specified'
+        const fullLocation = locationParts.length > 0
+          ? locationParts.join(', ')
+          : (member.coordinates
+              ? `${member.coordinates.lat.toFixed(5)}, ${member.coordinates.lng.toFixed(5)}`
+              : 'Location not specified')
         
         const popupContent = `
           <div class="p-2">
@@ -97,14 +83,6 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
             <p class="text-sm text-gray-600">${member.relationship}</p>
             <p class="text-sm text-gray-500">📍 ${fullLocation}</p>
             ${member.birthYear ? `<p class="text-sm text-gray-500">Born: ${member.birthYear}</p>` : ''}
-            <div class="mt-2">
-              <button 
-                onclick="window.navigateToMemberDetails('${member.id}', '${member.name}', '${member.relationship}', '${member.role}', '${member.birthYear || ''}', '${member.deathYear || ''}', '${member.location || ''}', '${member.city || ''}', '${member.state || ''}', '${member.country || ''}', '${member.address || ''}', '${member.coordinates ? JSON.stringify(member.coordinates) : ''}')"
-                class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded transition-colors"
-              >
-                View Details
-              </button>
-            </div>
           </div>
         `
         
@@ -129,8 +107,7 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
       }
-      // Clean up global function
-      delete (window as any).navigateToMemberDetails
+      // No global function to clean up
     }
   }, [familyMembers])
 
