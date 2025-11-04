@@ -171,8 +171,8 @@ export default function ProfilePage() {
       if (user) {
         try {
           // First set basic data from Firebase Auth (no mock defaults)
-          const createdAt = (user.metadata && user.metadata.creationTime)
-            ? new Date(user.metadata.creationTime)
+          const createdAt = (auth.currentUser && auth.currentUser.metadata && auth.currentUser.metadata.creationTime)
+            ? new Date(auth.currentUser.metadata.creationTime)
             : null
           const formattedJoinDate = createdAt
             ? createdAt.toLocaleString(undefined, { month: 'long', year: 'numeric' })
@@ -200,7 +200,8 @@ export default function ProfilePage() {
               location: profile.location || prev.location,
               bio: typeof profile.bio === 'string' ? profile.bio : prev.bio,
               profileImage: profile.photoURL || prev.profileImage,
-              joinDate: profile.joinDate || prev.joinDate,
+              // Some profiles may store a joinDate; keep it if present
+              joinDate: (profile as any).joinDate || prev.joinDate,
             }))
           }
 
