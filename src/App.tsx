@@ -27,7 +27,7 @@ function Home() {
             className="h-14 md:h-16 mx-auto mb-6 select-none"
           />
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-ancestor-dark mb-4">
-            A place to preserve your masterpiece
+            A place to preserve your heritage
           </h1>
           <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-10">
             Preserve African heritage through interactive family trees, burial site mapping,
@@ -50,17 +50,15 @@ function Home() {
           </div>
         </div>
 
-        {/* Visual strip (inspired showcase without navbar) */}
+        {/* Stacked showcase (images) */}
         <div className="mt-14 md:mt-20">
-          <div className="relative mx-auto max-w-5xl">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6">
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 shadow-md" />
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 shadow-md translate-y-4" />
-              <div className="hidden sm:block aspect-[4/3] rounded-2xl bg-gradient-to-br from-rose-100 to-rose-200 shadow-md" />
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 shadow-md -translate-y-2" />
-              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-sky-100 to-sky-200 shadow-md" />
-              <div className="hidden sm:block aspect-[4/3] rounded-2xl bg-gradient-to-br from-fuchsia-100 to-fuchsia-200 shadow-md translate-y-3" />
-            </div>
+          <div className="relative mx-auto max-w-5xl h-80 md:h-96">
+            {/* NOTE: Place your images in public/landing-page-images/ and update names if needed */}
+            <img src="/landing-page-images/1.jpg" alt="Showcase 1" className="absolute left-4 top-8 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-6deg]" />
+            <img src="/landing-page-images/2.jpg" alt="Showcase 2" className="absolute left-36 md:left-56 top-2 w-44 md:w-64 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[4deg]" />
+            <img src="/landing-page-images/3.jpg" alt="Showcase 3" className="absolute left-64 md:left-[26rem] top-10 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-2deg]" />
+            <img src="/landing-page-images/4.jpg" alt="Showcase 4" className="absolute left-12 md:left-24 top-40 md:top-48 w-44 md:w-64 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[3deg]" />
+            <img src="/landing-page-images/5.jpg" alt="Showcase 5" className="absolute left-60 md:left-[22rem] top-48 md:top-56 w-40 md:w-56 aspect-[4/3] object-cover rounded-2xl shadow-xl rotate-[-5deg]" />
           </div>
         </div>
       </div>
