@@ -170,14 +170,21 @@ export default function ProfilePage() {
     const loadUserProfile = async () => {
       if (user) {
         try {
-          // First set basic data from Firebase Auth
+          // First set basic data from Firebase Auth (no mock defaults)
+          const createdAt = (user.metadata && user.metadata.creationTime)
+            ? new Date(user.metadata.creationTime)
+            : null
+          const formattedJoinDate = createdAt
+            ? createdAt.toLocaleString(undefined, { month: 'long', year: 'numeric' })
+            : ''
+
           setUserData(prev => ({
             ...prev,
             name: user.displayName || 'User',
             email: user.email || '',
             profileImage: user.photoURL || '',
-            joinDate: 'January 2024',
-            bio: 'Family historian and heritage preservation enthusiast. Passionate about keeping African traditions alive for future generations.',
+            joinDate: formattedJoinDate,
+            bio: '', // Blank by default until user sets it
             phone: '',
             location: '',
           }))
@@ -191,8 +198,9 @@ export default function ProfilePage() {
               email: profile.email || prev.email,
               phone: profile.phone || prev.phone,
               location: profile.location || prev.location,
-              bio: profile.bio || prev.bio,
+              bio: typeof profile.bio === 'string' ? profile.bio : prev.bio,
               profileImage: profile.photoURL || prev.profileImage,
+              joinDate: profile.joinDate || prev.joinDate,
             }))
           }
 
