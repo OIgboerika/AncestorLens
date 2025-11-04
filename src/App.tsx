@@ -17,17 +17,51 @@ import SignUpPage from './pages/auth/SignUpPage'
 
 function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-ancestor-light to-white flex items-center justify-center px-4">
-      <div className="text-center max-w-xl">
-        <div className="w-16 h-16 bg-ancestor-primary rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-white font-bold text-3xl">𝔘</span>
+    <div className="min-h-screen bg-gradient-to-b from-white via-ancestor-light/50 to-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        {/* Hero */}
+        <div className="text-center">
+          <img
+            src="/images/logo.png"
+            alt="AncestorLens logo"
+            className="h-14 md:h-16 mx-auto mb-6 select-none"
+          />
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-ancestor-dark mb-4">
+            A place to preserve your masterpiece
+          </h1>
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-10">
+            Preserve African heritage through interactive family trees, burial site mapping,
+            and cultural memories — built for African families and traditions.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center rounded-lg bg-ancestor-primary text-white px-6 py-3 text-base md:text-lg font-semibold shadow-sm hover:bg-ancestor-dark transition"
+            >
+              Sign Up
+            </Link>
+            <Link
+              to="/login"
+              className="inline-flex items-center justify-center rounded-lg border border-ancestor-primary text-ancestor-primary px-6 py-3 text-base md:text-lg font-semibold hover:bg-ancestor-primary/10 transition"
+            >
+              Log In
+            </Link>
+          </div>
         </div>
-        <h1 className="text-4xl font-bold text-ancestor-dark mb-3">AncestorLens</h1>
-        <p className="text-gray-600 mb-8">Preserving African Heritage</p>
-        <div className="flex items-center justify-center gap-3">
-          <Link to="/signup" className="btn-primary">Sign Up</Link>
-          <Link to="/login" className="btn-secondary">Log In</Link>
-          <Link to="/dashboard" className="text-ancestor-primary hover:text-ancestor-dark font-medium">Go to Dashboard</Link>
+
+        {/* Visual strip (inspired showcase without navbar) */}
+        <div className="mt-14 md:mt-20">
+          <div className="relative mx-auto max-w-5xl">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 md:gap-6">
+              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 shadow-md" />
+              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 shadow-md translate-y-4" />
+              <div className="hidden sm:block aspect-[4/3] rounded-2xl bg-gradient-to-br from-rose-100 to-rose-200 shadow-md" />
+              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-indigo-100 to-indigo-200 shadow-md -translate-y-2" />
+              <div className="aspect-[4/3] rounded-2xl bg-gradient-to-br from-sky-100 to-sky-200 shadow-md" />
+              <div className="hidden sm:block aspect-[4/3] rounded-2xl bg-gradient-to-br from-fuchsia-100 to-fuchsia-200 shadow-md translate-y-3" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
