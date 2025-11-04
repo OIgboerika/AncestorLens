@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -34,7 +33,6 @@ interface FamilyMemberMapProps {
 const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
-  const navigate = useNavigate()
 
   useEffect(() => {
     if (!mapRef.current) return
