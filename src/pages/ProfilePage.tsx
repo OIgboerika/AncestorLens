@@ -152,18 +152,7 @@ export default function ProfilePage() {
     }
   }
 
-  // Manual cleanup function for orphaned data
-  const handleCleanupData = async () => {
-    if (!user) return
-    setRefreshing(true)
-    try {
-      console.log('Starting data cleanup...')
-      await loadRealTimeMetrics(user.uid)
-      console.log('Data cleanup completed!')
-    } finally {
-      setRefreshing(false)
-    }
-  }
+  // Cleanup function removed with UI button; keep loadRealTimeMetrics for refresh
 
   // Load user profile data from Firestore
   useEffect(() => {
@@ -407,10 +396,7 @@ export default function ProfilePage() {
                 <RefreshCw className={`w-4 h-4 mr-3 ${refreshing ? 'animate-spin' : ''}`} /> 
                 {refreshing ? 'Refreshing...' : 'Refresh Metrics'}
               </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={handleCleanupData} disabled={refreshing}>
-                <RefreshCw className={`w-4 h-4 mr-3 ${refreshing ? 'animate-spin' : ''}`} /> 
-                {refreshing ? 'Cleaning...' : 'Cleanup Data'}
-              </Button>
+              
               <Button variant="outline" className="w-full justify-start" onClick={() => {
                 navigator.clipboard.writeText(window.location.href)
                 alert('Profile link copied to clipboard!')
