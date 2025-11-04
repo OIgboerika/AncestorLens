@@ -27,6 +27,10 @@ const FamilyTreeBuilderPage = () => {
     birthPlace: '',
     deathPlace: '',
     coordinates: { lat: 0, lng: 0 },
+    location: '',
+    city: '',
+    country: '',
+    address: '',
     occupation: '',
     email: '',
     phone: '',
@@ -125,11 +129,6 @@ const FamilyTreeBuilderPage = () => {
 
       const { latitude, longitude } = position.coords
       
-      setFormData(prev => ({
-        ...prev,
-        coordinates: { lat: latitude, lng: longitude }
-      }))
-
       // Reverse geocode to get address
       try {
         const response = await fetch(
@@ -139,9 +138,32 @@ const FamilyTreeBuilderPage = () => {
         
         if (data.display_name) {
           console.log('Location found:', data.display_name)
+          
+          // Extract location details from reverse geocoding response
+          const address = data.address || {}
+          const city = address.city || address.town || address.village || address.municipality || ''
+          const country = address.country || ''
+          const streetAddress = address.road || address.house_number ? `${address.house_number || ''} ${address.road || ''}`.trim() : ''
+          const displayName = data.display_name || ''
+          
+          // Update formData with extracted location details
+          setFormData(prev => ({
+            ...prev,
+            coordinates: { lat: latitude, lng: longitude },
+            location: displayName,
+            city: city,
+            country: country,
+            address: streetAddress
+          }))
         }
       } catch (error) {
         console.log('Reverse geocoding failed, but coordinates are set')
+        // Still set coordinates even if reverse geocoding fails
+        setFormData(prev => ({
+          ...prev,
+          coordinates: { lat: latitude, lng: longitude },
+          location: `Current Location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
+        }))
       }
 
       alert('Current location set successfully!')
@@ -170,8 +192,11 @@ const FamilyTreeBuilderPage = () => {
       role: formData.deathDate ? 'Deceased' : 'Living',
       birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
       deathYear: formData.deathDate ? new Date(formData.deathDate).getFullYear().toString() : '',
-      location: formData.birthPlace || 'Unknown',
+      location: formData.location || formData.birthPlace || '',
       coordinates: formData.coordinates,
+      city: formData.city || '',
+      country: formData.country || '',
+      address: formData.address || '',
       image: undefined as string | undefined
     }
     
@@ -198,6 +223,9 @@ const FamilyTreeBuilderPage = () => {
           deathPlace: formData.deathPlace || undefined,
           location: payload.location || undefined,
           coordinates: payload.coordinates || undefined,
+          city: payload.city || undefined,
+          country: payload.country || undefined,
+          address: payload.address || undefined,
           relationship: formData.relationship,
           gender: formData.gender || undefined,
           occupation: formData.occupation || undefined,
@@ -472,6 +500,22 @@ const FamilyTreeBuilderPage = () => {
                 coordinates: { ...prev.coordinates, lng: parseFloat(e.target.value) || 0 }
               }))}
               placeholder="Enter longitude"
+            />
+            
+            <Input
+              label="Country"
+              name="country"
+              value={formData.country}
+              onChange={handleInputChange}
+              placeholder="Enter country"
+            />
+            
+            <Input
+              label="Street Address"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              placeholder="Enter street address (optional)"
             />
           </div>
           
