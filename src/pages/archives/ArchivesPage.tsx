@@ -218,26 +218,61 @@ export default function ArchivesPage() {
 
                   <div className="mt-4 flex items-center gap-2">
                     {isViewable(doc.fileType) && (
-                      <a 
-                        href={doc.fileUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
+                      <button
+                        onClick={async () => {
+                          try {
+                            // Use fetch to handle potential CORS/access issues
+                            const response = await fetch(doc.fileUrl, { mode: 'cors' })
+                            if (response.ok) {
+                              const blob = await response.blob()
+                              const url = window.URL.createObjectURL(blob)
+                              window.open(url, '_blank')
+                              // Clean up after a delay
+                              setTimeout(() => window.URL.revokeObjectURL(url), 100)
+                            } else {
+                              alert('Unable to view document. Please try downloading it instead.')
+                            }
+                          } catch (error) {
+                            console.error('Error viewing document:', error)
+                            alert('Unable to view document. Please try downloading it instead.')
+                          }
+                        }}
                         className="flex-1"
                       >
                         <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                           <Eye className="w-4 h-4" /> View
                         </Button>
-                      </a>
+                      </button>
                     )}
-                    <a 
-                      href={doc.fileUrl} 
-                      download={doc.fileName}
+                    <button
+                      onClick={async () => {
+                        try {
+                          // Use fetch to handle potential CORS/access issues
+                          const response = await fetch(doc.fileUrl, { mode: 'cors' })
+                          if (response.ok) {
+                            const blob = await response.blob()
+                            const url = window.URL.createObjectURL(blob)
+                            const link = document.createElement('a')
+                            link.href = url
+                            link.download = doc.fileName
+                            document.body.appendChild(link)
+                            link.click()
+                            document.body.removeChild(link)
+                            window.URL.revokeObjectURL(url)
+                          } else {
+                            alert('Unable to download document. Please check your Cloudinary settings.')
+                          }
+                        } catch (error) {
+                          console.error('Error downloading document:', error)
+                          alert('Unable to download document. Please check your Cloudinary settings.')
+                        }
+                      }}
                       className="flex-1"
                     >
                       <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                         <Download className="w-4 h-4" /> Download
                       </Button>
-                    </a>
+                    </button>
                   </div>
                 </div>
               </Card>
@@ -271,21 +306,56 @@ export default function ArchivesPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {isViewable(doc.fileType) && (
-                          <a 
-                            href={doc.fileUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(doc.fileUrl, { mode: 'cors' })
+                                if (response.ok) {
+                                  const blob = await response.blob()
+                                  const url = window.URL.createObjectURL(blob)
+                                  window.open(url, '_blank')
+                                  setTimeout(() => window.URL.revokeObjectURL(url), 100)
+                                } else {
+                                  alert('Unable to view document. Please try downloading it instead.')
+                                }
+                              } catch (error) {
+                                console.error('Error viewing document:', error)
+                                alert('Unable to view document. Please try downloading it instead.')
+                              }
+                            }}
                           >
                             <Button variant="outline" size="sm" className="flex items-center gap-2">
                               <Eye className="w-4 h-4" /> View
                             </Button>
-                          </a>
+                          </button>
                         )}
-                        <a href={doc.fileUrl} download={doc.fileName}>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(doc.fileUrl, { mode: 'cors' })
+                              if (response.ok) {
+                                const blob = await response.blob()
+                                const url = window.URL.createObjectURL(blob)
+                                const link = document.createElement('a')
+                                link.href = url
+                                link.download = doc.fileName
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                                window.URL.revokeObjectURL(url)
+                              } else {
+                                alert('Unable to download document. Please check your Cloudinary settings.')
+                              }
+                            } catch (error) {
+                              console.error('Error downloading document:', error)
+                              alert('Unable to download document. Please check your Cloudinary settings.')
+                            }
+                          }}
+                        >
                           <Button variant="outline" size="sm" className="flex items-center gap-2">
                             <Download className="w-4 h-4" /> Download
                           </Button>
-                        </a>
+                        </button>
                         <button 
                           className="text-gray-400 hover:text-red-600 p-2 rounded hover:bg-red-50"
                           onClick={() => openDeleteModal(doc)}
