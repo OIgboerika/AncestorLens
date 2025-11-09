@@ -232,6 +232,7 @@ class CloudinaryService {
     formData.append('folder', `ancestorlens/archives/${documentId}`)
     formData.append('public_id', `archive-${documentId}-${fileName}`)
     formData.append('tags', 'archive,document,heritage')
+    formData.append('access_mode', 'public') // Ensure files are publicly accessible
     
     const endpoint = resourceType === 'image' 
       ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
