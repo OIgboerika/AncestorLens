@@ -60,13 +60,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   const signInWithGoogle = async () => {
-    setLoading(true)
+    // Don't set loading here - let the page handle its own loading state
+    // This allows immediate navigation without waiting for state update
     try {
       const firebaseUser = await authService.signInWithGoogle()
+      // Update user state asynchronously (non-blocking)
       setUser(authService.convertUser(firebaseUser))
       return firebaseUser
-    } finally {
-      setLoading(false)
+    } catch (error) {
+      throw error
     }
   }
 

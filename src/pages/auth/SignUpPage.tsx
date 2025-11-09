@@ -42,13 +42,17 @@ const SignUpPage = () => {
     setLoading(true)
 
     try {
-      await signInWithGoogle()
+      // Navigate immediately after auth promise resolves (optimistic navigation)
+      // Don't wait for AuthContext state update
+      const authPromise = signInWithGoogle()
+      // Navigate as soon as auth completes, before state updates
+      await authPromise
       navigate('/dashboard')
     } catch (error: any) {
       setError(error.message || 'Failed to sign in with Google')
-    } finally {
       setLoading(false)
     }
+    // Note: Don't set loading to false on success - let navigation handle it
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -19,33 +19,29 @@ const DashboardPage = () => {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Debug logging to check user data
-  console.log('Dashboard - User data:', user)
-  
   // Extract first name from displayName, with fallbacks
   const getUserFirstName = () => {
     if (user?.displayName) {
-      console.log('Using displayName:', user.displayName)
       return user.displayName.split(' ')[0]
     }
     if (user?.email) {
       // Extract name from email if displayName is not available
       const emailName = user.email.split('@')[0]
-      console.log('Using email name:', emailName)
       return emailName.charAt(0).toUpperCase() + emailName.slice(1)
     }
-    console.log('Using fallback: User')
     return 'User'
   }
   
   const userFirstName = getUserFirstName()
 
-  // Subscribe to user activities in real-time
+  // Subscribe to user activities in real-time (non-blocking)
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
     
     if (user?.uid) {
+      // Set loading state but don't block UI
       setLoading(true)
+      // Load activities asynchronously - don't block navigation
       unsubscribe = activityService.onActivitiesChange(user.uid, (latestActivities: Activity[]) => {
         // Sort activities by timestamp (newest first)
         const sortedActivities = latestActivities.sort((a, b) => {
