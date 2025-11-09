@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { familyService } from '../../firebase/services/familyService'
 import DraggableFamilyTree from '../../components/family/DraggableFamilyTree'
 import FamilyMemberMap from '../../components/maps/FamilyMemberMap'
+import FamilyTimeline from '../../components/family/FamilyTimeline'
 
 interface FamilyMember {
   id: number | string
@@ -703,6 +704,9 @@ export default function FamilyTreePage() {
               <p className="text-sm text-gray-600">Generations</p>
             </div>
           </Card>
+
+          {/* Family Timeline */}
+          <FamilyTimeline familyMembers={familyData.allMembers} />
         </div>
       </div>
     </div>
