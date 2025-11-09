@@ -14,11 +14,24 @@ import {
 import Card from '../components/ui/Card/Card'
 import { useAuth } from '../contexts/AuthContext'
 import { activityService, Activity } from '../firebase/services/activityService'
+import { familyService } from '../firebase/services/familyService'
+import FamilyTimeline from '../components/family/FamilyTimeline'
+
+interface FamilyMember {
+  id: number | string
+  name: string
+  role: 'Living' | 'Deceased'
+  birthYear?: string
+  deathYear?: string
+  birthDate?: string
+  deathDate?: string
+}
 
 const DashboardPage = () => {
   const { user } = useAuth()
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
   
   // Extract first name from displayName, with fallbacks
   const getUserFirstName = () => {
@@ -61,6 +74,39 @@ const DashboardPage = () => {
     return () => {
       if (unsubscribe) unsubscribe()
     }
+  }, [user])
+
+  // Load family members for timeline
+  useEffect(() => {
+    const loadFamilyMembers = async () => {
+      if (!user?.uid) {
+        // Fallback to localStorage if no user
+        const saved = JSON.parse(localStorage.getItem('familyMembers') || '[]') as FamilyMember[]
+        setFamilyMembers(saved)
+        return
+      }
+
+      try {
+        const firestoreMembers = await familyService.getFamilyMembers(user.uid)
+        const convertedMembers: FamilyMember[] = firestoreMembers.map(member => ({
+          id: member.id || Date.now().toString(),
+          name: member.name,
+          role: member.role,
+          birthYear: member.birthYear,
+          deathYear: member.deathYear,
+          birthDate: member.birthDate,
+          deathDate: member.deathDate,
+        }))
+        setFamilyMembers(convertedMembers)
+      } catch (error) {
+        console.error('Error loading family members:', error)
+        // Fallback to localStorage
+        const saved = JSON.parse(localStorage.getItem('familyMembers') || '[]') as FamilyMember[]
+        setFamilyMembers(saved)
+      }
+    }
+
+    loadFamilyMembers()
   }, [user])
 
   // Get icon for activity type
@@ -172,7 +218,7 @@ const DashboardPage = () => {
         </Card>
       </div>
 
-      {/* Privacy + Recent Activity */}
+      {/* Privacy + Recent Activity + Family Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="border border-gray-200">
           <div className="flex items-start gap-3">
@@ -223,6 +269,15 @@ const DashboardPage = () => {
             )}
           </div>
         </Card>
+      </div>
+
+      {/* Family Timeline - Same size as Recent Activity */}
+      <div className="mt-4 sm:mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="lg:col-span-3">
+            <FamilyTimeline familyMembers={familyMembers} />
+          </div>
+        </div>
       </div>
     </div>
   )

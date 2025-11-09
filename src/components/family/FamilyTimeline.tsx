@@ -102,8 +102,8 @@ export default function FamilyTimeline({ familyMembers }: FamilyTimelineProps) {
 
   const { events, minYear, maxYear } = timelineData
   const yearRange = maxYear - minYear || 1
-  const chartHeight = 200
-  const padding = 40
+  const chartHeight = 250
+  const padding = 50
 
   // Calculate max value for scaling
   const maxValue = Math.max(
@@ -130,11 +130,13 @@ export default function FamilyTimeline({ familyMembers }: FamilyTimelineProps) {
   }
 
   return (
-    <Card hoverable={false}>
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-ancestor-primary" />
-          <h3 className="text-lg font-semibold text-ancestor-dark">Family Timeline</h3>
+    <Card hoverable={false} className="border border-gray-200">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-ancestor-primary" />
+            <h3 className="text-lg font-semibold text-ancestor-dark">Family Timeline</h3>
+          </div>
         </div>
 
         {/* Legend */}
