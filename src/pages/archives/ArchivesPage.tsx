@@ -114,34 +114,64 @@ export default function ArchivesPage() {
     return fileType.includes('pdf') || fileType.includes('image')
   }
 
-  // Helper to get accessible Cloudinary URL (tries multiple formats)
-  const getAccessibleUrl = (url: string): string => {
-    if (!url || !url.includes('cloudinary.com')) return url
+  // Helper to generate alternative Cloudinary URLs
+  const generateCloudinaryUrls = (url: string): string[] => {
+    if (!url || !url.includes('cloudinary.com')) return [url]
     
-    // Try removing version from URL (sometimes helps with access)
-    const withoutVersion = url.replace(/\/v\d+\//, '/')
+    const urls: string[] = []
     
-    // Try using http instead of https
-    const httpVersion = withoutVersion.replace('https://', 'http://')
+    // Extract cloud name and public_id from URL
+    const cloudNameMatch = url.match(/res\.cloudinary\.com\/([^/]+)/)
+    const versionMatch = url.match(/\/v(\d+)\//)
+    const publicIdMatch = url.match(/\/(?:raw|image|video)\/upload(?:\/v\d+)?\/(.+)$/)
     
-    // Return the http version without version number as it's more likely to work
-    return httpVersion
+    if (cloudNameMatch && publicIdMatch) {
+      const cloudName = cloudNameMatch[1]
+      let publicId = publicIdMatch[1]
+      
+      // Remove file extension from public_id for raw files
+      if (url.includes('/raw/upload')) {
+        publicId = publicId.replace(/\.(pdf|doc|docx|xls|xlsx)$/i, '')
+      }
+      
+      // Try different URL formats
+      // Format 1: Without version, HTTPS
+      urls.push(`https://res.cloudinary.com/${cloudName}/raw/upload/${publicId}`)
+      
+      // Format 2: Without version, HTTP
+      urls.push(`http://res.cloudinary.com/${cloudName}/raw/upload/${publicId}`)
+      
+      // Format 3: With transformation (fl_attachment for downloads)
+      urls.push(`https://res.cloudinary.com/${cloudName}/raw/upload/fl_attachment/${publicId}`)
+      
+      // Format 4: Original URL without version
+      if (versionMatch) {
+        urls.push(url.replace(/\/v\d+\//, '/'))
+      }
+    }
+    
+    // Add original URL
+    urls.push(url)
+    
+    return [...new Set(urls)] // Remove duplicates
   }
 
   // Helper to handle file access with better error messages
   const handleFileAccess = async (fileUrl: string, fileName: string, action: 'view' | 'download') => {
-    const urlsToTry = [
-      getAccessibleUrl(fileUrl), // Try without version, http
-      fileUrl.replace(/\/v\d+\//, '/'), // Try without version, original protocol
-      fileUrl, // Original URL
-    ]
+    // Generate all possible URL formats to try
+    const urlsToTry = generateCloudinaryUrls(fileUrl)
+    
+    console.log('Trying URLs:', urlsToTry)
 
     for (const url of urlsToTry) {
       try {
         const response = await fetch(url, { 
           mode: 'cors',
-          credentials: 'omit'
+          credentials: 'omit',
+          cache: 'no-cache'
         })
+        
+        console.log(`URL ${url} returned status:`, response.status)
         
         if (response.ok) {
           const blob = await response.blob()
@@ -160,6 +190,10 @@ export default function ArchivesPage() {
             setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000)
           }
           return true
+        } else if (response.status === 401) {
+          // 401 means unauthorized - file is private
+          console.error(`File is private (401): ${url}`)
+          continue
         }
       } catch (error) {
         console.error(`Failed to access ${url}:`, error)
@@ -168,15 +202,27 @@ export default function ArchivesPage() {
     }
 
     // If all URLs fail, show helpful error message
+    const isOldFile = fileUrl.includes('/v') // Files with version numbers are likely old uploads
+    
     alert(
-      `Unable to ${action} document. This is likely due to Cloudinary access settings.\n\n` +
-      `To fix this:\n` +
-      `1. Go to Cloudinary Dashboard → Settings → Upload → Upload Presets\n` +
-      `2. Click on your upload preset (m1_default)\n` +
-      `3. Click "Show more..." and set "Access control" to "Public"\n` +
-      `4. Save the preset\n` +
-      `5. Re-upload your documents\n\n` +
-      `Note: Files uploaded before changing this setting will still be private.`
+      `Unable to ${action} document.\n\n` +
+      (isOldFile 
+        ? `⚠️ IMPORTANT: This file was uploaded BEFORE your Cloudinary preset was set to "Public".\n\n` +
+          `Cloudinary cannot change access mode of already-uploaded files.\n\n` +
+          `SOLUTION:\n` +
+          `1. Delete this document from the Archives page\n` +
+          `2. Re-upload it (it will now be public)\n\n` +
+          `OR if you just changed the preset:\n` +
+          `1. Make sure "Access control" is set to "Public" in Cloudinary\n` +
+          `2. Save the preset\n` +
+          `3. Delete and re-upload all old documents\n\n`
+        : `This file may be private. Please:\n` +
+          `1. Check Cloudinary Dashboard → Settings → Upload → Upload Presets\n` +
+          `2. Ensure "Access control" is set to "Public"\n` +
+          `3. Save the preset\n` +
+          `4. Re-upload this document\n\n`
+      ) +
+      `Your current Cloudinary URL: ${fileUrl.substring(0, 80)}...`
     )
     return false
   }
