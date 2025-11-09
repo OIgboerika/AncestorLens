@@ -844,17 +844,17 @@ const BurialSitesPage = () => {
                 </div>
               )}
               
-              <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 ${!isVisible ? 'blur-sm' : ''}`}>
+              <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch ${!isVisible ? 'blur-sm' : ''}`}>
               {/* Site Image */}
-              <div className="lg:col-span-1">
-                <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
+              <div className="lg:col-span-1 flex">
+                <div className="w-full bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                   <img 
                     src={site.images && site.images.length > 0 ? site.images[0] : DEFAULT_BURIAL_IMAGE} 
                     alt={site.name}
-                    className={`w-full h-full ${site.images && site.images.length > 0 ? 'object-cover' : 'object-contain object-center bg-gray-100'}`}
+                    className={`w-full h-full ${site.images && site.images.length > 0 ? 'object-cover' : 'object-contain object-center'}`}
                     onError={(e) => {
                       e.currentTarget.src = DEFAULT_BURIAL_IMAGE
-                      e.currentTarget.className = 'w-full h-full object-contain object-center bg-gray-100'
+                      e.currentTarget.className = 'w-full h-full object-contain object-center'
                     }}
                   />
                 </div>
