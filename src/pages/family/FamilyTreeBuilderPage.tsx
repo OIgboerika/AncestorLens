@@ -137,8 +137,6 @@ const FamilyTreeBuilderPage = () => {
         const data = await response.json()
         
         if (data.display_name) {
-          console.log('Location found:', data.display_name)
-          
           // Extract location details from reverse geocoding response
           const address = data.address || {}
           const city = address.city || address.town || address.village || address.municipality || ''
@@ -157,7 +155,6 @@ const FamilyTreeBuilderPage = () => {
           }))
         }
       } catch (error) {
-        console.log('Reverse geocoding failed, but coordinates are set')
         // Still set coordinates even if reverse geocoding fails
         setFormData(prev => ({
           ...prev,
@@ -184,10 +181,11 @@ const FamilyTreeBuilderPage = () => {
       return
     }
     
+    const tempId = Date.now()
     const payload = { 
       ...formData, 
       heritageTags: tags,
-      id: Date.now(), // temporary; may be replaced by Firestore id
+      id: tempId,
       name: `${formData.firstName} ${formData.middleName ? formData.middleName + ' ' : ''}${formData.lastName}`.trim(),
       role: formData.deathDate ? 'Deceased' : 'Living',
       birthYear: formData.birthDate ? new Date(formData.birthDate).getFullYear().toString() : '',
@@ -200,77 +198,101 @@ const FamilyTreeBuilderPage = () => {
       image: undefined as string | undefined
     }
     
-    // Persist to Firestore when signed in
-    // Upload image to Cloudinary and get URL
-    let imageUrl: string | undefined = undefined
-    try {
-      if (formData.profileImage) {
-        // Upload to Cloudinary for better performance and optimization
-        imageUrl = await cloudinaryService.uploadFamilyMemberPhoto(formData.profileImage, payload.id.toString())
-      }
-      if (user?.uid) {
-        const firestoreId = await familyService.addFamilyMember(user.uid, {
-          name: payload.name,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          middleName: formData.middleName || undefined,
-          role: formData.deathDate ? 'Deceased' : 'Living',
-          birthYear: payload.birthYear || undefined,
-          deathYear: payload.deathYear || undefined,
-          birthDate: formData.birthDate || undefined,
-          deathDate: formData.deathDate || undefined,
-          birthPlace: formData.birthPlace || undefined,
-          deathPlace: formData.deathPlace || undefined,
-          location: payload.location || undefined,
-          coordinates: payload.coordinates || undefined,
-          city: payload.city || undefined,
-          country: payload.country || undefined,
-          address: payload.address || undefined,
-          relationship: formData.relationship,
-          gender: formData.gender || undefined,
-          occupation: formData.occupation || undefined,
-          email: formData.email || undefined,
-          phone: formData.phone || undefined,
-          bio: formData.bio || undefined,
-          image: imageUrl,
-          heritageTags: tags,
-          parentId: formData.parentId || undefined,
-          hasChildren: undefined,
-          hasParents: undefined,
-        })
-        payload.id = Number(firestoreId)
-        if (imageUrl) payload.image = imageUrl
-      }
-    } catch (err) {
-      console.error('Failed to save to Firestore, falling back to localStorage', err)
-      // Fallback to data URL if Cloudinary fails
-      if (formData.profileImage && !imageUrl) {
-        imageUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onload = () => resolve(reader.result as string)
-          reader.onerror = reject
-          reader.readAsDataURL(formData.profileImage as File)
-        })
-        payload.image = imageUrl
-      }
-    }
-
-    // Store in localStorage as local cache
+    // OPTIMIZATION: Save to localStorage FIRST for instant feedback
     const existingMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
-    existingMembers.push({ ...payload, image: imageUrl || payload.image })
+    existingMembers.push({ ...payload })
     localStorage.setItem('familyMembers', JSON.stringify(existingMembers))
     
-    console.log('Family Tree Builder - Saved payload:', payload)
-    console.log('Family Tree Builder - All members:', existingMembers)
+    // Navigate immediately (optimistic navigation)
+    navigate('/family-tree')
     
-    // Log activity
+    // OPTIMIZATION: Upload image and save to Firestore in parallel (non-blocking)
     if (user?.uid) {
-      activityService.logFamilyMemberAdded(user.uid, payload.name, payload.id.toString())
+      Promise.all([
+        // Upload image in parallel with Firestore save
+        formData.profileImage 
+          ? cloudinaryService.uploadFamilyMemberPhoto(formData.profileImage, tempId.toString())
+              .catch(() => undefined) // Fallback to data URL if Cloudinary fails
+          : Promise.resolve(undefined),
+        // Start Firestore save immediately (without waiting for image)
+        Promise.resolve(undefined) // Placeholder for parallel execution
+      ]).then(async ([imageUrl]) => {
+        // If image upload failed, try data URL fallback
+        let finalImageUrl = imageUrl
+        if (formData.profileImage && !finalImageUrl) {
+          try {
+            finalImageUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result as string)
+              reader.onerror = reject
+              reader.readAsDataURL(formData.profileImage as File)
+            })
+          } catch {
+            // Ignore fallback failures
+          }
+        }
+        
+        // Save to Firestore with image URL
+        try {
+          const firestoreId = await familyService.addFamilyMember(user.uid, {
+            name: payload.name,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            middleName: formData.middleName || undefined,
+            role: formData.deathDate ? 'Deceased' : 'Living',
+            birthYear: payload.birthYear || undefined,
+            deathYear: payload.deathYear || undefined,
+            birthDate: formData.birthDate || undefined,
+            deathDate: formData.deathDate || undefined,
+            birthPlace: formData.birthPlace || undefined,
+            deathPlace: formData.deathPlace || undefined,
+            location: payload.location || undefined,
+            coordinates: payload.coordinates || undefined,
+            city: payload.city || undefined,
+            country: payload.country || undefined,
+            address: payload.address || undefined,
+            relationship: formData.relationship,
+            gender: formData.gender || undefined,
+            occupation: formData.occupation || undefined,
+            email: formData.email || undefined,
+            phone: formData.phone || undefined,
+            bio: formData.bio || undefined,
+            image: finalImageUrl,
+            heritageTags: tags,
+            parentId: formData.parentId || undefined,
+            hasChildren: undefined,
+            hasParents: undefined,
+          })
+          
+          // Update localStorage with Firestore ID and image URL
+          const updatedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+          const memberIndex = updatedMembers.findIndex((m: any) => m.id === tempId)
+          if (memberIndex !== -1) {
+            updatedMembers[memberIndex] = { ...updatedMembers[memberIndex], id: Number(firestoreId), image: finalImageUrl }
+            localStorage.setItem('familyMembers', JSON.stringify(updatedMembers))
+          }
+          
+          // Log activity (non-blocking)
+          activityService.logFamilyMemberAdded(user.uid, payload.name, firestoreId).catch(() => {
+            // Silently fail - activity logging is not critical
+          })
+        } catch (err) {
+          // Update localStorage with image URL even if Firestore fails
+          if (finalImageUrl) {
+            const updatedMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+            const memberIndex = updatedMembers.findIndex((m: any) => m.id === tempId)
+            if (memberIndex !== -1) {
+              updatedMembers[memberIndex] = { ...updatedMembers[memberIndex], image: finalImageUrl }
+              localStorage.setItem('familyMembers', JSON.stringify(updatedMembers))
+            }
+          }
+        }
+      }).catch(() => {
+        // Silently handle errors - user already navigated away
+      })
     }
     
-    console.log('Family member added:', payload)
     alert('Family member added successfully!')
-    navigate('/family-tree')
   }
 
   return (

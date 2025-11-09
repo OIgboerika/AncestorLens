@@ -27,12 +27,6 @@ class CloudinaryService {
       const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
       const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'm1_default'
       
-      console.log('Cloudinary upload config:', {
-        cloudName,
-        uploadPreset,
-        fileName: file.name,
-        fileSize: file.size
-      })
       
       const formData = new FormData()
       formData.append('file', file)

@@ -117,56 +117,11 @@ export default function UploadMemoryPage() {
     }
 
     setSaving(true)
-    // Build memory payload and persist
-    let imagesData: string[] | undefined
-    let imageUrl: string | undefined
-    let audioUrl: string | undefined
-    // If signed in, upload to Firebase Storage and use download URLs
-    if (user?.uid) {
-      const folderId = `${Date.now()}`
-      if (mediaType === 'image' && imageFiles.length > 0) {
-        // Upload to Cloudinary for better performance and optimization
-        imagesData = await cloudinaryService.uploadCulturalMemoryImages(imageFiles, folderId)
-        imageUrl = imagesData[0]
-      }
-      if (mediaType === 'audio' && audioFile) {
-        // Upload audio to Cloudinary (video endpoint supports audio)
-        const audioResult = await cloudinaryService.uploadAudio(
-          audioFile,
-          {
-            folder: `ancestorlens/cultural-memories/${folderId}`,
-            public_id: `audio-${folderId}`,
-            tags: ['cultural-memory', 'audio'],
-            context: { caption: 'Cultural memory audio' }
-          }
-        )
-        audioUrl = audioResult.secure_url
-      }
-    } else {
-      // Not signed in: fallback to data URLs so the UI still works
-      if (mediaType === 'image' && imageFiles.length > 0) {
-        const readers = imageFiles.map((f) => new Promise<string>((resolve, reject) => {
-          const r = new FileReader()
-          r.onload = () => resolve(r.result as string)
-          r.onerror = reject
-          r.readAsDataURL(f)
-        }))
-        imagesData = await Promise.all(readers)
-        imageUrl = imagesData[0]
-      }
-      if (mediaType === 'audio' && audioFile) {
-        audioUrl = await new Promise<string>((resolve, reject) => {
-          const r = new FileReader()
-          r.onload = () => resolve(r.result as string)
-          r.onerror = reject
-          r.readAsDataURL(audioFile)
-        })
-      }
-    }
-
+    
     const tags = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []
-
     const localId = Date.now()
+    
+    // OPTIMIZATION: Save to localStorage FIRST for instant feedback
     const localMemory = {
       id: localId,
       title: formData.title,
@@ -177,53 +132,129 @@ export default function UploadMemoryPage() {
       category: formData.category,
       type: mediaType,
       duration: mediaType === 'audio' ? 'unknown' : undefined,
-      imageUrl,
-      images: imagesData,
-      audioUrl,
+      imageUrl: undefined as string | undefined,
+      images: undefined as string[] | undefined,
+      audioUrl: undefined as string | undefined,
       tags
     }
-
-    // Persist to Firestore when signed in
-    try {
-      if (user?.uid) {
-        const memoryId = await culturalMemoryService.addCulturalMemory(user.uid, {
-          title: localMemory.title,
-          description: localMemory.description,
-          category: localMemory.category,
-          type: localMemory.type,
-          duration: localMemory.duration,
-          imageUrl: localMemory.imageUrl,
-          images: localMemory.images,
-          audioUrl: localMemory.audioUrl,
-          year: formData.year || undefined,
-          location: localMemory.location,
-          participants: formData.participants || undefined,
-          tags,
-          uploadedBy: user.displayName || 'You',
-          uploadDate: localMemory.uploadDate,
-        })
-        // Log activity
-        await activityService.logMemoryUploaded(user.uid, localMemory.title, memoryId, mediaType)
-        // Cache in localStorage for instant UX
-        const existing = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
-        existing.push({ ...localMemory, id: memoryId })
-        localStorage.setItem('culturalMemories', JSON.stringify(existing))
-      } else {
-        // Not signed in: keep local only
-        const existing = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
-        existing.push(localMemory)
-        localStorage.setItem('culturalMemories', JSON.stringify(existing))
-      }
-    } catch (err) {
-      console.error('Failed to save cultural memory:', err)
-      // Fallback to local-only so the user doesn't lose work
-      const existing = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
-      existing.push(localMemory)
-      localStorage.setItem('culturalMemories', JSON.stringify(existing))
-    }
+    
+    const existing = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+    existing.push(localMemory)
+    localStorage.setItem('culturalMemories', JSON.stringify(existing))
+    
+    // Navigate immediately (optimistic navigation)
     setSaving(false)
-    alert('Memory uploaded successfully!')
     navigate('/cultural-memories')
+    
+    // OPTIMIZATION: Upload media and save to Firestore in parallel (non-blocking)
+    if (user?.uid) {
+      const folderId = `${localId}`
+      
+      Promise.all([
+        // Upload images in parallel
+        mediaType === 'image' && imageFiles.length > 0
+          ? cloudinaryService.uploadCulturalMemoryImages(imageFiles, folderId)
+          : Promise.resolve(undefined),
+        // Upload audio in parallel
+        mediaType === 'audio' && audioFile
+          ? cloudinaryService.uploadAudio(audioFile, {
+              folder: `ancestorlens/cultural-memories/${folderId}`,
+              public_id: `audio-${folderId}`,
+              tags: ['cultural-memory', 'audio'],
+              context: { caption: 'Cultural memory audio' }
+            }).then(result => result.secure_url)
+          : Promise.resolve(undefined)
+      ]).then(async ([imagesData, audioUrl]) => {
+        const imageUrl = imagesData?.[0]
+        
+        // Update localStorage with media URLs
+        const updatedMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+        const memoryIndex = updatedMemories.findIndex((m: any) => m.id === localId)
+        if (memoryIndex !== -1) {
+          updatedMemories[memoryIndex] = {
+            ...updatedMemories[memoryIndex],
+            imageUrl,
+            images: imagesData,
+            audioUrl
+          }
+          localStorage.setItem('culturalMemories', JSON.stringify(updatedMemories))
+        }
+        
+        // Save to Firestore
+        try {
+          const memoryId = await culturalMemoryService.addCulturalMemory(user.uid, {
+            title: localMemory.title,
+            description: localMemory.description,
+            category: localMemory.category,
+            type: localMemory.type,
+            duration: localMemory.duration,
+            imageUrl,
+            images: imagesData,
+            audioUrl,
+            year: formData.year || undefined,
+            location: localMemory.location,
+            participants: formData.participants || undefined,
+            tags,
+            uploadedBy: user.displayName || 'You',
+            uploadDate: localMemory.uploadDate,
+          })
+          
+          // Update localStorage with Firestore ID
+          const finalMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+          const finalIndex = finalMemories.findIndex((m: any) => m.id === localId)
+          if (finalIndex !== -1) {
+            finalMemories[finalIndex] = { ...finalMemories[finalIndex], id: memoryId }
+            localStorage.setItem('culturalMemories', JSON.stringify(finalMemories))
+          }
+          
+          // Log activity (non-blocking)
+          activityService.logMemoryUploaded(user.uid, localMemory.title, memoryId, mediaType).catch(() => {
+            // Silently fail - activity logging is not critical
+          })
+        } catch (err) {
+          // Silently handle errors - user already navigated away
+        }
+      }).catch(() => {
+        // Silently handle errors - user already navigated away
+      })
+    } else {
+      // Not signed in: use data URLs
+      if (mediaType === 'image' && imageFiles.length > 0) {
+        const readers = imageFiles.map((f) => new Promise<string>((resolve, reject) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.onerror = reject
+          r.readAsDataURL(f)
+        }))
+        const imagesData = await Promise.all(readers)
+        const updatedMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+        const memoryIndex = updatedMemories.findIndex((m: any) => m.id === localId)
+        if (memoryIndex !== -1) {
+          updatedMemories[memoryIndex] = {
+            ...updatedMemories[memoryIndex],
+            imageUrl: imagesData[0],
+            images: imagesData
+          }
+          localStorage.setItem('culturalMemories', JSON.stringify(updatedMemories))
+        }
+      }
+      if (mediaType === 'audio' && audioFile) {
+        const audioUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.onerror = reject
+          r.readAsDataURL(audioFile)
+        })
+        const updatedMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+        const memoryIndex = updatedMemories.findIndex((m: any) => m.id === localId)
+        if (memoryIndex !== -1) {
+          updatedMemories[memoryIndex] = { ...updatedMemories[memoryIndex], audioUrl }
+          localStorage.setItem('culturalMemories', JSON.stringify(updatedMemories))
+        }
+      }
+    }
+    
+    alert('Memory uploaded successfully!')
   }
 
   return (

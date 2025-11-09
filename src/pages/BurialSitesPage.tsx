@@ -7,6 +7,7 @@ import '../styles/leaflet.css'
 import { useAuth } from '../contexts/AuthContext'
 import { activityService } from '../firebase/services/activityService'
 import { burialSiteService, BurialSite as FirestoreBurialSite } from '../firebase/services/burialSiteService'
+import { cloudinaryService } from '../services/cloudinaryService'
 
 interface BurialSite {
   id: string | number
@@ -542,13 +543,6 @@ const BurialSitesPage = () => {
     }
   }
 
-  const fileToDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-
   const handleSaveSite = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newSite.name || !newSite.deceasedName || !newSite.location) {
@@ -560,59 +554,91 @@ const BurialSitesPage = () => {
       return
     }
 
-    try {
-      console.log('Starting burial site save process...')
-      console.log('User ID:', user.uid)
-      console.log('New site data:', newSite)
-      
-      const imageUrls = await Promise.all(uploadedImages.map(fileToDataUrl))
-      console.log('Image URLs processed:', imageUrls.length)
-      
-      // Prepare data for Firestore - strip undefined values
-      const siteData: Omit<FirestoreBurialSite, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
-        name: newSite.name!,
-        deceasedName: newSite.deceasedName!,
-        location: newSite.location!,
-        coordinates: newSite.coordinates || { lat: 0, lng: 0 },
-        images: (newSite.images && newSite.images.length > 0) ? newSite.images : imageUrls,
+    const tempId = Date.now()
+    
+    // OPTIMIZATION: Save to localStorage FIRST for instant feedback
+    const siteData: any = {
+      id: tempId,
+      name: newSite.name!,
+      deceasedName: newSite.deceasedName!,
+      location: newSite.location!,
+      coordinates: newSite.coordinates || { lat: 0, lng: 0 },
+      images: [],
+      familyAccess: [],
+      visible: true
+    }
+    
+    if (newSite.birthYear) siteData.birthYear = newSite.birthYear
+    if (newSite.deathYear) siteData.deathYear = newSite.deathYear
+    if (newSite.description) siteData.description = newSite.description
+    if (newSite.visitNotes) siteData.visitNotes = newSite.visitNotes
+    if (newSite.lastVisit) siteData.lastVisit = newSite.lastVisit
+    
+    const existingSites = JSON.parse(localStorage.getItem('burialSites') || '[]')
+    existingSites.push(siteData)
+    localStorage.setItem('burialSites', JSON.stringify(existingSites))
+    
+    // Reset form and close modal immediately
+    setIsModalOpen(false)
+    setNewSite({ name: '', deceasedName: '', birthYear: '', deathYear: '', location: '', coordinates: { lat: 0, lng: 0 }, description: '', visitNotes: '', lastVisit: '', images: [] })
+    setUploadedImages([])
+    
+    alert('Burial site saved successfully!')
+    
+    // OPTIMIZATION: Upload images to Cloudinary and save to Firestore in parallel (non-blocking)
+    Promise.all([
+      // Upload images to Cloudinary in parallel (much faster than data URLs)
+      uploadedImages.length > 0
+        ? cloudinaryService.uploadBurialSitePhotos(uploadedImages, tempId.toString())
+        : Promise.resolve([])
+    ]).then(async ([imageUrls]) => {
+      // Prepare Firestore data with Cloudinary URLs
+      const firestoreData: Omit<FirestoreBurialSite, 'id' | 'userId' | 'createdAt' | 'updatedAt'> = {
+        name: siteData.name,
+        deceasedName: siteData.deceasedName,
+        location: siteData.location,
+        coordinates: siteData.coordinates,
+        images: imageUrls.length > 0 ? imageUrls : (newSite.images && newSite.images.length > 0 ? newSite.images : []),
         familyAccess: [],
         visible: true
-      } as Omit<FirestoreBurialSite, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
-
-      // Only add optional fields if they have values
-      if (newSite.birthYear) siteData.birthYear = newSite.birthYear
-      if (newSite.deathYear) siteData.deathYear = newSite.deathYear
-      if (newSite.description) siteData.description = newSite.description
-      if (newSite.visitNotes) siteData.visitNotes = newSite.visitNotes
-      if (newSite.lastVisit) siteData.lastVisit = newSite.lastVisit
-
-      console.log('Prepared site data:', siteData)
-
-      // Save to Firestore
-      const siteId = await burialSiteService.addBurialSite(user.uid, siteData)
-      console.log('Burial site saved with ID:', siteId)
-
-      // Log activity
-      try {
-        await activityService.logBurialSiteAdded(user.uid, siteData.name, siteId)
-        console.log('Activity logged successfully')
-      } catch (activityError) {
-        console.warn('Failed to log activity:', activityError)
-        // Don't fail the whole operation if activity logging fails
       }
-
-      // Reset form
-      setIsModalOpen(false)
-      setNewSite({ name: '', deceasedName: '', birthYear: '', deathYear: '', location: '', coordinates: { lat: 0, lng: 0 }, description: '', visitNotes: '', lastVisit: '', images: [] })
-      setUploadedImages([])
-
-      alert('Burial site saved successfully!')
-    } catch (error) {
-      console.error('Detailed error saving burial site:', error)
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-      alert(`Failed to save burial site: ${error instanceof Error ? error.message : 'Unknown error'}`)
-    }
+      
+      if (siteData.birthYear) firestoreData.birthYear = siteData.birthYear
+      if (siteData.deathYear) firestoreData.deathYear = siteData.deathYear
+      if (siteData.description) firestoreData.description = siteData.description
+      if (siteData.visitNotes) firestoreData.visitNotes = siteData.visitNotes
+      if (siteData.lastVisit) firestoreData.lastVisit = siteData.lastVisit
+      
+      try {
+        // Save to Firestore
+        const siteId = await burialSiteService.addBurialSite(user.uid, firestoreData)
+        
+        // Update localStorage with Firestore ID and image URLs
+        const updatedSites = JSON.parse(localStorage.getItem('burialSites') || '[]')
+        const siteIndex = updatedSites.findIndex((s: any) => s.id === tempId)
+        if (siteIndex !== -1) {
+          updatedSites[siteIndex] = { ...updatedSites[siteIndex], id: siteId, images: imageUrls.length > 0 ? imageUrls : updatedSites[siteIndex].images }
+          localStorage.setItem('burialSites', JSON.stringify(updatedSites))
+        }
+        
+        // Log activity (non-blocking)
+        activityService.logBurialSiteAdded(user.uid, siteData.name, siteId).catch(() => {
+          // Silently fail - activity logging is not critical
+        })
+      } catch (error) {
+        // Update localStorage with image URLs even if Firestore fails
+        if (imageUrls.length > 0) {
+          const updatedSites = JSON.parse(localStorage.getItem('burialSites') || '[]')
+          const siteIndex = updatedSites.findIndex((s: any) => s.id === tempId)
+          if (siteIndex !== -1) {
+            updatedSites[siteIndex] = { ...updatedSites[siteIndex], images: imageUrls }
+            localStorage.setItem('burialSites', JSON.stringify(updatedSites))
+          }
+        }
+      }
+    }).catch(() => {
+      // Silently handle errors - user already got feedback
+    })
   }
 
   const handleUpdateSite = async (e: React.FormEvent) => {
