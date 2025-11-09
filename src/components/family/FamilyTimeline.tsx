@@ -102,19 +102,30 @@ export default function FamilyTimeline({ familyMembers }: FamilyTimelineProps) {
 
   const { events, minYear, maxYear } = timelineData
   const yearRange = maxYear - minYear || 1
-  const chartHeight = 250
-  const padding = 50
+  const chartHeight = 300
+  const chartWidth = 1000
+  const leftPadding = 60
+  const rightPadding = 40
+  const topPadding = 40
+  const bottomPadding = 50
+  const plotWidth = chartWidth - leftPadding - rightPadding
+  const plotHeight = chartHeight - topPadding - bottomPadding
 
-  // Calculate max value for scaling
-  const maxValue = Math.max(
+  // Calculate max value for scaling (round up to nearest nice number)
+  const rawMax = Math.max(
     ...events.map(e => Math.max(e.births, e.deaths)),
     1
   )
+  const maxValue = Math.ceil(rawMax / 5) * 5 || 5 // Round to nearest 5
+
+  // Generate Y-axis ticks (similar to sample: 0, 30, 60, 90, etc.)
+  const yAxisTicks = 7 // Number of ticks
+  const yTickInterval = maxValue / (yAxisTicks - 1)
 
   if (events.length === 0) {
     return (
-      <Card hoverable={false}>
-        <div className="p-4">
+      <Card hoverable={false} className="border border-gray-200">
+        <div className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-ancestor-primary" />
             <h3 className="text-lg font-semibold text-ancestor-dark">Family Timeline</h3>
@@ -129,6 +140,13 @@ export default function FamilyTimeline({ familyMembers }: FamilyTimelineProps) {
     )
   }
 
+  // Create data points for all years in range (including zeros)
+  const allYearsData: TimelineEvent[] = []
+  for (let year = minYear; year <= maxYear; year++) {
+    const existingEvent = events.find(e => e.year === year)
+    allYearsData.push(existingEvent || { year, births: 0, deaths: 0, members: [] })
+  }
+
   return (
     <Card hoverable={false} className="border border-gray-200">
       <div className="p-6">
@@ -139,149 +157,202 @@ export default function FamilyTimeline({ familyMembers }: FamilyTimelineProps) {
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-4 mb-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-gray-600">Births</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span className="text-gray-600">Deaths</span>
-          </div>
-        </div>
-
         {/* Chart */}
-        <div className="relative w-full" style={{ height: `${chartHeight + padding * 2}px` }}>
+        <div className="relative w-full bg-white rounded-lg" style={{ height: `${chartHeight}px` }}>
           <svg
-            viewBox={`0 0 1000 ${chartHeight + padding * 2}`}
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
             preserveAspectRatio="xMidYMid meet"
             className="w-full h-full"
           >
-            {/* Grid lines */}
-            {Array.from({ length: 6 }).map((_, i) => {
-              const y = padding + (chartHeight / 5) * i
+            {/* Horizontal gridlines */}
+            {Array.from({ length: yAxisTicks }).map((_, i) => {
+              const y = topPadding + (i * (plotHeight / (yAxisTicks - 1)))
               return (
-                <line
-                  key={`grid-${i}`}
-                  x1={padding * 10}
-                  y1={y}
-                  x2={1000 - padding * 10}
-                  y2={y}
-                  stroke="#e5e7eb"
-                  strokeWidth={1}
-                  strokeDasharray="2,2"
-                />
+                <g key={`grid-${i}`}>
+                  <line
+                    x1={leftPadding}
+                    y1={y}
+                    x2={leftPadding + plotWidth}
+                    y2={y}
+                    stroke="#e5e7eb"
+                    strokeWidth={1}
+                  />
+                </g>
               )
             })}
 
-            {/* Year labels on x-axis */}
-            {Array.from({ length: Math.min(10, yearRange + 1) }).map((_, i) => {
-              const year = minYear + Math.floor((yearRange / Math.max(1, Math.min(10, yearRange + 1) - 1)) * i)
-              const xPos = padding * 10 + ((i / Math.max(1, Math.min(10, yearRange + 1) - 1)) * (1000 - padding * 20))
+            {/* Y-axis labels */}
+            {Array.from({ length: yAxisTicks }).map((_, i) => {
+              const value = Math.round(maxValue - (i * yTickInterval))
+              const y = topPadding + (i * (plotHeight / (yAxisTicks - 1)))
               return (
-                <g key={`year-${year}`}>
-                  <line
-                    x1={xPos}
-                    y1={chartHeight + padding}
-                    x2={xPos}
-                    y2={chartHeight + padding + 5}
-                    stroke="#6b7280"
-                    strokeWidth={1}
-                  />
+                <g key={`y-label-${i}`}>
                   <text
-                    x={xPos}
-                    y={chartHeight + padding + 18}
-                    textAnchor="middle"
+                    x={leftPadding - 10}
+                    y={y + 4}
+                    textAnchor="end"
                     fontSize="12"
                     fill="#6b7280"
                   >
-                    {year}
+                    {value}
                   </text>
                 </g>
               )
             })}
 
-            {/* Data points and lines */}
-            {events.map((event) => {
-              const xPos = padding * 10 + ((event.year - minYear) / yearRange) * (1000 - padding * 20)
-              const birthY = chartHeight + padding - (event.births / maxValue) * chartHeight
-              const deathY = chartHeight + padding - (event.deaths / maxValue) * chartHeight
+            {/* X-axis line */}
+            <line
+              x1={leftPadding}
+              y1={topPadding + plotHeight}
+              x2={leftPadding + plotWidth}
+              y2={topPadding + plotHeight}
+              stroke="#6b7280"
+              strokeWidth={1}
+            />
 
+            {/* Y-axis line */}
+            <line
+              x1={leftPadding}
+              y1={topPadding}
+              x2={leftPadding}
+              y2={topPadding + plotHeight}
+              stroke="#6b7280"
+              strokeWidth={1}
+            />
+
+            {/* Year labels on x-axis */}
+            {allYearsData.map((event, index) => {
+              // Show every Nth year to avoid crowding
+              const showEveryN = Math.max(1, Math.floor(allYearsData.length / 12))
+              if (index % showEveryN !== 0 && index !== allYearsData.length - 1) return null
+              
+              const xPos = leftPadding + ((event.year - minYear) / yearRange) * plotWidth
               return (
-                <g key={`event-${event.year}`}>
-                  {/* Birth point */}
-                  {event.births > 0 && (
-                    <circle
-                      cx={xPos}
-                      cy={birthY}
-                      r={5}
-                      fill="#10b981"
-                      stroke="white"
-                      strokeWidth={2}
-                    >
-                      <title>{event.year}: {event.births} birth{event.births > 1 ? 's' : ''}</title>
-                    </circle>
-                  )}
-
-                  {/* Death point */}
-                  {event.deaths > 0 && (
-                    <circle
-                      cx={xPos}
-                      cy={deathY}
-                      r={5}
-                      fill="#ef4444"
-                      stroke="white"
-                      strokeWidth={2}
-                    >
-                      <title>{event.year}: {event.deaths} death{event.deaths > 1 ? 's' : ''}</title>
-                    </circle>
-                  )}
+                <g key={`year-${event.year}`}>
+                  <line
+                    x1={xPos}
+                    y1={topPadding + plotHeight}
+                    x2={xPos}
+                    y2={topPadding + plotHeight + 5}
+                    stroke="#6b7280"
+                    strokeWidth={1}
+                  />
+                  <text
+                    x={xPos}
+                    y={topPadding + plotHeight + 20}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill="#6b7280"
+                  >
+                    {event.year}
+                  </text>
                 </g>
               )
             })}
 
-            {/* Connect points with lines */}
-            {events.map((event, index) => {
-              if (index === 0) return null
-              const prevEvent = events[index - 1]
-              const x1 = padding * 10 + ((prevEvent.year - minYear) / yearRange) * (1000 - padding * 20)
-              const x2 = padding * 10 + ((event.year - minYear) / yearRange) * (1000 - padding * 20)
-              const y1 = chartHeight + padding - (prevEvent.births / maxValue) * chartHeight
-              const y2 = chartHeight + padding - (event.births / maxValue) * chartHeight
-              const deathY1 = chartHeight + padding - (prevEvent.deaths / maxValue) * chartHeight
-              const deathY2 = chartHeight + padding - (event.deaths / maxValue) * chartHeight
+            {/* Birth line */}
+            <polyline
+              points={allYearsData.map(event => {
+                const x = leftPadding + ((event.year - minYear) / yearRange) * plotWidth
+                const y = topPadding + plotHeight - (event.births / maxValue) * plotHeight
+                return `${x},${y}`
+              }).join(' ')}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={2.5}
+            />
 
+            {/* Death line */}
+            <polyline
+              points={allYearsData.map(event => {
+                const x = leftPadding + ((event.year - minYear) / yearRange) * plotWidth
+                const y = topPadding + plotHeight - (event.deaths / maxValue) * plotHeight
+                return `${x},${y}`
+              }).join(' ')}
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth={2.5}
+            />
+
+            {/* Data points for births */}
+            {allYearsData.map((event) => {
+              if (event.births === 0) return null
+              const xPos = leftPadding + ((event.year - minYear) / yearRange) * plotWidth
+              const yPos = topPadding + plotHeight - (event.births / maxValue) * plotHeight
               return (
-                <g key={`lines-${event.year}`}>
-                  {/* Birth line */}
-                  <line
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    opacity={0.6}
-                  />
-                  {/* Death line */}
-                  <line
-                    x1={x1}
-                    y1={deathY1}
-                    x2={x2}
-                    y2={deathY2}
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    opacity={0.6}
-                  />
-                </g>
+                <circle
+                  key={`birth-${event.year}`}
+                  cx={xPos}
+                  cy={yPos}
+                  r={4}
+                  fill="#10b981"
+                  stroke="white"
+                  strokeWidth={2}
+                >
+                  <title>{event.year}: {event.births} birth{event.births > 1 ? 's' : ''}</title>
+                </circle>
               )
             })}
+
+            {/* Data points for deaths */}
+            {allYearsData.map((event) => {
+              if (event.deaths === 0) return null
+              const xPos = leftPadding + ((event.year - minYear) / yearRange) * plotWidth
+              const yPos = topPadding + plotHeight - (event.deaths / maxValue) * plotHeight
+              return (
+                <circle
+                  key={`death-${event.year}`}
+                  cx={xPos}
+                  cy={yPos}
+                  r={4}
+                  fill="#ef4444"
+                  stroke="white"
+                  strokeWidth={2}
+                >
+                  <title>{event.year}: {event.deaths} death{event.deaths > 1 ? 's' : ''}</title>
+                </circle>
+              )
+            })}
+
+            {/* Axis labels */}
+            <text
+              x={chartWidth / 2}
+              y={chartHeight - 10}
+              textAnchor="middle"
+              fontSize="12"
+              fill="#6b7280"
+              fontWeight="500"
+            >
+              Year
+            </text>
+            <text
+              x={20}
+              y={chartHeight / 2}
+              textAnchor="middle"
+              fontSize="12"
+              fill="#6b7280"
+              fontWeight="500"
+              transform={`rotate(-90, 20, ${chartHeight / 2})`}
+            >
+              Count
+            </text>
           </svg>
         </div>
 
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-0.5 bg-green-500"></div>
+            <span className="text-gray-700 font-medium">Births</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-0.5 bg-red-500"></div>
+            <span className="text-gray-700 font-medium">Deaths</span>
+          </div>
+        </div>
+
         {/* Summary stats */}
-        <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
+        <div className="mt-6 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-gray-600">Total Births</p>
             <p className="text-lg font-semibold text-green-600">
@@ -299,4 +370,3 @@ export default function FamilyTimeline({ familyMembers }: FamilyTimelineProps) {
     </Card>
   )
 }
-
