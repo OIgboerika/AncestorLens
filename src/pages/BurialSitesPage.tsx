@@ -653,7 +653,10 @@ const BurialSitesPage = () => {
     }
 
     try {
-      const newImageUrls = await Promise.all(editUploadedImages.map(fileToDataUrl))
+      // OPTIMIZATION: Upload new images to Cloudinary (much faster than data URLs)
+      const newImageUrls = editUploadedImages.length > 0
+        ? await cloudinaryService.uploadBurialSitePhotos(editUploadedImages, editSite.id.toString())
+        : []
       
       // Prepare updates for Firestore
       const updates: Partial<FirestoreBurialSite> = {
@@ -666,7 +669,7 @@ const BurialSitesPage = () => {
         description: editSite.description || undefined,
         visitNotes: editSite.visitNotes || undefined,
         lastVisit: editSite.lastVisit || undefined,
-        images: [...(editSite.images || []), ...newImageUrls]
+        images: [...(editSite.images || []), ...newImageUrls] as string[]
       }
 
       // Update in Firestore
