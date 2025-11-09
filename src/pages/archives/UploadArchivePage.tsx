@@ -84,101 +84,88 @@ export default function UploadArchivePage() {
       return
     }
 
+    if (!formData.category) {
+      alert('Please select a category for the document')
+      return
+    }
+
     setSaving(true)
     
     const tags = formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []
     const localId = Date.now()
     
-    // OPTIMIZATION: Save to localStorage FIRST for instant feedback
-    const localDocument = {
-      id: localId,
-      title: formData.title,
-      description: formData.description || undefined,
-      category: formData.category || undefined,
-      fileName: selectedFile.name,
-      fileType: selectedFile.type,
-      fileSize: selectedFile.size,
-      fileUrl: undefined as string | undefined,
-      tags,
-      uploadedBy: user?.displayName || 'You',
-      uploadDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    }
-    
-    const existing = JSON.parse(localStorage.getItem('archives') || '[]')
-    existing.push(localDocument)
-    localStorage.setItem('archives', JSON.stringify(existing))
-    
-    // Navigate immediately (optimistic navigation)
-    setSaving(false)
-    navigate('/archives')
-    
-    // OPTIMIZATION: Upload file and save to Firestore in parallel (non-blocking)
-    if (user?.uid) {
-      Promise.resolve().then(async () => {
-        try {
-          // Upload file to Cloudinary
-          const fileUrl = await cloudinaryService.uploadArchiveDocument(selectedFile, localId.toString())
-          
-          // Update localStorage with file URL
-          const updatedArchives = JSON.parse(localStorage.getItem('archives') || '[]')
-          const archiveIndex = updatedArchives.findIndex((a: any) => a.id === localId)
-          if (archiveIndex !== -1) {
-            updatedArchives[archiveIndex] = {
-              ...updatedArchives[archiveIndex],
-              fileUrl
-            }
-            localStorage.setItem('archives', JSON.stringify(updatedArchives))
-          }
-          
-          // Save to Firestore
-          const documentId = await archiveService.addArchiveDocument(user.uid, {
-            title: localDocument.title,
-            description: localDocument.description,
-            category: localDocument.category,
-            fileUrl,
-            fileName: localDocument.fileName,
-            fileType: localDocument.fileType,
-            fileSize: localDocument.fileSize,
-            tags,
-            uploadedBy: user.displayName || 'You',
-            uploadDate: localDocument.uploadDate,
-          })
-          
-          // Update localStorage with Firestore ID
-          const finalArchives = JSON.parse(localStorage.getItem('archives') || '[]')
-          const finalIndex = finalArchives.findIndex((a: any) => a.id === localId)
-          if (finalIndex !== -1) {
-            finalArchives[finalIndex] = { ...finalArchives[finalIndex], id: documentId }
-            localStorage.setItem('archives', JSON.stringify(finalArchives))
-          }
-          
-          // Log activity (non-blocking)
-          activityService.logArchiveUploaded(user.uid, localDocument.title, documentId).catch(() => {
-            // Silently fail - activity logging is not critical
-          })
-        } catch (err) {
-          // Silently handle errors - user already navigated away
-        }
-      }).catch(() => {
-        // Silently handle errors - user already navigated away
-      })
-    } else {
-      // Not signed in: use data URL
-      const fileUrl = await new Promise<string>((resolve, reject) => {
-        const r = new FileReader()
-        r.onload = () => resolve(r.result as string)
-        r.onerror = reject
-        r.readAsDataURL(selectedFile)
-      })
-      const updatedArchives = JSON.parse(localStorage.getItem('archives') || '[]')
-      const archiveIndex = updatedArchives.findIndex((a: any) => a.id === localId)
-      if (archiveIndex !== -1) {
-        updatedArchives[archiveIndex] = { ...updatedArchives[archiveIndex], fileUrl }
-        localStorage.setItem('archives', JSON.stringify(updatedArchives))
+    try {
+      // Upload file to Cloudinary FIRST
+      let fileUrl: string
+      if (user?.uid) {
+        fileUrl = await cloudinaryService.uploadArchiveDocument(selectedFile, localId.toString())
+      } else {
+        // Not signed in: use data URL
+        fileUrl = await new Promise<string>((resolve, reject) => {
+          const r = new FileReader()
+          r.onload = () => resolve(r.result as string)
+          r.onerror = reject
+          r.readAsDataURL(selectedFile)
+        })
       }
+      
+      // Prepare document data
+      const localDocument = {
+        id: localId,
+        title: formData.title,
+        description: formData.description || undefined,
+        category: formData.category,
+        fileName: selectedFile.name,
+        fileType: selectedFile.type,
+        fileSize: selectedFile.size,
+        fileUrl,
+        tags,
+        uploadedBy: user?.displayName || 'You',
+        uploadDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      }
+      
+      // Save to localStorage for instant feedback
+      const existing = JSON.parse(localStorage.getItem('archives') || '[]')
+      existing.push(localDocument)
+      localStorage.setItem('archives', JSON.stringify(existing))
+      
+      // Save to Firestore if signed in
+      if (user?.uid) {
+        const documentId = await archiveService.addArchiveDocument(user.uid, {
+          title: localDocument.title,
+          description: localDocument.description,
+          category: localDocument.category,
+          fileUrl,
+          fileName: localDocument.fileName,
+          fileType: localDocument.fileType,
+          fileSize: localDocument.fileSize,
+          tags,
+          uploadedBy: user.displayName || 'You',
+          uploadDate: localDocument.uploadDate,
+        })
+        
+        // Update localStorage with Firestore ID
+        const finalArchives = JSON.parse(localStorage.getItem('archives') || '[]')
+        const finalIndex = finalArchives.findIndex((a: any) => a.id === localId)
+        if (finalIndex !== -1) {
+          finalArchives[finalIndex] = { ...finalArchives[finalIndex], id: documentId }
+          localStorage.setItem('archives', JSON.stringify(finalArchives))
+        }
+        
+        // Log activity (non-blocking)
+        activityService.logArchiveUploaded(user.uid, localDocument.title, documentId).catch(() => {
+          // Silently fail - activity logging is not critical
+        })
+      }
+      
+      setSaving(false)
+      alert('Document uploaded successfully!')
+      navigate('/archives')
+    } catch (error) {
+      console.error('Error uploading document:', error)
+      setSaving(false)
+      alert('Failed to upload document. Please try again.')
     }
-    
-    alert('Document uploaded successfully!')
   }
 
   const formatFileSize = (bytes: number) => {
@@ -261,12 +248,13 @@ export default function UploadArchivePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
               <select 
                 name="category"
                 value={formData.category}
                 onChange={handleInputChange}
                 className="input-field" 
+                required
               >
                 <option value="">Select category</option>
                 <option value="Birth Certificate">Birth Certificate</option>
