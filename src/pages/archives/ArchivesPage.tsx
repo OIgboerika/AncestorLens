@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Calendar, User, FileText, Grid3x3, List, Trash2, AlertTriangle, Archive, Download, Eye } from 'lucide-react'
+import { Plus, Search, Calendar, User, LayoutGrid, List, Trash2, AlertTriangle, Archive, Download, Eye } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import { useAuth } from '../../contexts/AuthContext'
-import { archiveService, ArchiveDocument } from '../../firebase/services/archiveService'
+import { archiveService } from '../../firebase/services/archiveService'
 
 interface ArchiveItem {
   id: string | number
@@ -129,7 +129,7 @@ export default function ArchivesPage() {
               className={`p-2 rounded ${viewMode === 'grid' ? 'bg-ancestor-primary text-white' : 'text-gray-600 hover:bg-gray-100'}`}
               title="Grid view"
             >
-              <Grid3x3 className="w-4 h-4" />
+              <LayoutGrid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
