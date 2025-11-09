@@ -4,14 +4,15 @@ import { collection, addDoc, getDocs, query, where, limit, Timestamp, onSnapshot
 export interface Activity {
   id?: string
   userId: string
-  type: 'family_member_added' | 'family_member_updated' | 'memory_uploaded' | 'burial_site_added' | 'burial_site_updated' | 'profile_updated'
+  type: 'family_member_added' | 'family_member_updated' | 'memory_uploaded' | 'burial_site_added' | 'burial_site_updated' | 'profile_updated' | 'archive_uploaded'
   title: string
   description: string
   timestamp: Timestamp
-  metadata?: {
+    metadata?: {
     familyMemberId?: string
     memoryId?: string
     burialSiteId?: string
+    archiveId?: string
     [key: string]: any
   }
 }
@@ -157,6 +158,16 @@ export const activityService = {
       type: 'profile_updated',
       title: 'Profile Updated',
       description: 'Personal information was updated'
+    })
+  },
+
+  async logArchiveUploaded(userId: string, documentTitle: string, documentId: string): Promise<void> {
+    await this.addActivity({
+      userId,
+      type: 'archive_uploaded',
+      title: 'Document Uploaded',
+      description: `${documentTitle} was added to archives`,
+      metadata: { archiveId: documentId }
     })
   }
 }

@@ -208,6 +208,49 @@ class CloudinaryService {
     return results.map(result => result.secure_url)
   }
 
+  // Upload archive document (supports PDF, images, and other formats)
+  async uploadArchiveDocument(file: File, documentId: string): Promise<string> {
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'm1_default'
+    
+    // Determine resource type based on file type
+    const fileType = file.type.toLowerCase()
+    const fileName = file.name.replace(/\.[^/.]+$/, '') // Remove extension
+    let resourceType = 'auto'
+    
+    if (fileType.includes('pdf')) {
+      resourceType = 'raw' // PDFs are stored as raw files
+    } else if (fileType.includes('image')) {
+      resourceType = 'image'
+    } else {
+      resourceType = 'raw' // Other documents (DOC, XLS, etc.) as raw files
+    }
+    
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', uploadPreset)
+    formData.append('folder', `ancestorlens/archives/${documentId}`)
+    formData.append('public_id', `archive-${documentId}-${fileName}`)
+    formData.append('tags', 'archive,document,heritage')
+    
+    const endpoint = resourceType === 'image' 
+      ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
+      : `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Cloudinary upload failed: ${response.statusText} - ${errorText}`)
+    }
+
+    const result = await response.json()
+    return result.secure_url
+  }
+
   // Generate optimized thumbnail URL
   generateThumbnailUrl(publicId: string, width: number = 150, height: number = 150): string {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME

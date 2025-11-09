@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, TreePine, MapPin, BookOpen, Settings, Menu, X } from 'lucide-react'
+import { Home, TreePine, MapPin, BookOpen, Settings, Menu, X, Archive } from 'lucide-react'
 
 const navItems = [
   { name: 'Home', href: '/dashboard', icon: Home },
   { name: 'Family Tree', href: '/family-tree', icon: TreePine },
   { name: 'Burial Sites', href: '/burial-sites', icon: MapPin },
   { name: 'Cultural Memories', href: '/cultural-memories', icon: BookOpen },
+  { name: 'Archives', href: '/archives', icon: Archive },
   { name: 'Settings', href: '/privacy-settings', icon: Settings },
 ]
 

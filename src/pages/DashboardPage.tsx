@@ -9,6 +9,7 @@ import {
   User,
   Upload,
   Edit,
+  FileText,
 } from 'lucide-react'
 import Card from '../components/ui/Card/Card'
 import { useAuth } from '../contexts/AuthContext'
@@ -75,6 +76,8 @@ const DashboardPage = () => {
         return MapPin
       case 'profile_updated':
         return Edit
+      case 'archive_uploaded':
+        return FileText
       default:
         return Upload
     }
@@ -145,9 +148,24 @@ const DashboardPage = () => {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-ancestor-dark">Record Cultural Memories</h3>
-              <p className="text-sm text-gray-600 mt-1">Preserve photos, audio, and stories that define your family’s heritage.</p>
+              <p className="text-sm text-gray-600 mt-1">Preserve photos, audio, and stories that define your family's heritage.</p>
               <Link to="/upload-memory" className="inline-flex items-center mt-4 px-4 py-2 rounded-md border border-ancestor-accent text-ancestor-accent hover:bg-ancestor-accent hover:text-ancestor-dark transition-colors">
                 Upload Memory
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="border border-gray-200">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-ancestor-dark">Manage Archives</h3>
+              <p className="text-sm text-gray-600 mt-1">Store and organize important family documents like certificates and licenses.</p>
+              <Link to="/archives" className="inline-flex items-center mt-4 px-4 py-2 rounded-md border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-colors">
+                View Archives
               </Link>
             </div>
           </div>

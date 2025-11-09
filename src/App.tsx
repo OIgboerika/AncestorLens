@@ -9,6 +9,8 @@ import BurialSitesPage from './pages/BurialSitesPage'
 import CulturalMemoriesPage from './pages/cultural/CulturalMemoriesPage'
 import CulturalMemoryDetailsPage from './pages/cultural/CulturalMemoryDetailsPage'
 import UploadMemoryPage from './pages/cultural/UploadMemoryPage'
+import ArchivesPage from './pages/archives/ArchivesPage'
+import UploadArchivePage from './pages/archives/UploadArchivePage'
 import ProfilePage from './pages/ProfilePage'
 import PrivacySettingsPage from './pages/PrivacySettingsPage'
 import AccountSettingsPage from './pages/AccountSettingsPage'
@@ -83,6 +85,8 @@ export default function App() {
           <Route path="/cultural-memories" element={<CulturalMemoriesPage />} />
           <Route path="/cultural-memories/:id" element={<CulturalMemoryDetailsPage />} />
           <Route path="/upload-memory" element={<UploadMemoryPage />} />
+          <Route path="/archives" element={<ArchivesPage />} />
+          <Route path="/upload-archive" element={<UploadArchivePage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/privacy-settings" element={<PrivacySettingsPage />} />
           <Route path="/account-settings" element={<AccountSettingsPage />} />
