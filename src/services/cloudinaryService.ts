@@ -232,8 +232,10 @@ class CloudinaryService {
     formData.append('folder', `ancestorlens/archives/${documentId}`)
     formData.append('public_id', `archive-${documentId}-${fileName}`)
     formData.append('tags', 'archive,document,heritage')
-    // Note: For unsigned upload presets, ensure "Access control" is set to "Public" in Cloudinary dashboard
-    // Settings → Upload → Upload Presets → [Your Preset] → Show more → Access control: Public
+    // IMPORTANT: For files to be accessible, configure Cloudinary settings:
+    // 1. Upload Preset: Settings → Upload → Upload Presets → [Your Preset] → Show more → Access control: Public
+    // 2. PDF/ZIP Delivery: Settings → Security → Enable "Allow delivery of PDF and ZIP files" (for PDF uploads)
+    // Note: Files uploaded BEFORE these settings are changed will remain blocked and must be re-uploaded
     
     const endpoint = resourceType === 'image' 
       ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`

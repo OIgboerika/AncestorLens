@@ -202,27 +202,29 @@ export default function ArchivesPage() {
     }
 
     // If all URLs fail, show helpful error message
-    const isOldFile = fileUrl.includes('/v') // Files with version numbers are likely old uploads
-    
     alert(
       `Unable to ${action} document.\n\n` +
-      (isOldFile 
-        ? `⚠️ IMPORTANT: This file was uploaded BEFORE your Cloudinary preset was set to "Public".\n\n` +
-          `Cloudinary cannot change access mode of already-uploaded files.\n\n` +
-          `SOLUTION:\n` +
-          `1. Delete this document from the Archives page\n` +
-          `2. Re-upload it (it will now be public)\n\n` +
-          `OR if you just changed the preset:\n` +
-          `1. Make sure "Access control" is set to "Public" in Cloudinary\n` +
-          `2. Save the preset\n` +
-          `3. Delete and re-upload all old documents\n\n`
-        : `This file may be private. Please:\n` +
-          `1. Check Cloudinary Dashboard → Settings → Upload → Upload Presets\n` +
-          `2. Ensure "Access control" is set to "Public"\n` +
-          `3. Save the preset\n` +
-          `4. Re-upload this document\n\n`
-      ) +
-      `Your current Cloudinary URL: ${fileUrl.substring(0, 80)}...`
+      `⚠️ ISSUE: File is "Blocked for delivery" in Cloudinary\n\n` +
+      `This means the file cannot be accessed. Here's how to fix it:\n\n` +
+      `STEP 1: Fix Upload Preset Settings\n` +
+      `1. Go to Cloudinary Dashboard → Settings → Upload → Upload Presets\n` +
+      `2. Click on your preset (m1_default)\n` +
+      `3. Click "Show more..." to expand options\n` +
+      `4. Set "Access control" to "Public"\n` +
+      `5. Save the preset\n\n` +
+      `STEP 2: Enable PDF/ZIP Delivery (if uploading PDFs)\n` +
+      `1. Go to Cloudinary Dashboard → Settings → Security\n` +
+      `2. Find "PDF and ZIP files delivery" section\n` +
+      `3. Enable "Allow delivery of PDF and ZIP files"\n` +
+      `4. Save settings\n\n` +
+      `STEP 3: Fix Existing Files\n` +
+      `⚠️ IMPORTANT: Files uploaded BEFORE these changes are still blocked.\n` +
+      `Cloudinary cannot change access mode of already-uploaded files.\n\n` +
+      `SOLUTION:\n` +
+      `1. Delete this document from the Archives page\n` +
+      `2. Re-upload it (it will now be public and accessible)\n\n` +
+      `After completing all steps, new uploads will work correctly.\n\n` +
+      `File URL: ${fileUrl.substring(0, 100)}...`
     )
     return false
   }
