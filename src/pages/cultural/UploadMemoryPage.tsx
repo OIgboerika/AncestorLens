@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Mic, Upload, Save, FileAudio, Image as ImageIcon, Play, Pause, X, Trash2 } from 'lucide-react'
+import { ArrowLeft, Mic, Upload, Save, FileAudio, Image as ImageIcon, Play, Pause, Trash2 } from 'lucide-react'
 import Card from '../../components/ui/Card/Card'
 import Button from '../../components/ui/Button/Button'
 import { useNavigate } from 'react-router-dom'
