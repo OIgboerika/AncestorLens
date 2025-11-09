@@ -232,8 +232,8 @@ class CloudinaryService {
     formData.append('folder', `ancestorlens/archives/${documentId}`)
     formData.append('public_id', `archive-${documentId}-${fileName}`)
     formData.append('tags', 'archive,document,heritage')
-    // Note: access_mode is not allowed with unsigned upload presets
-    // Files uploaded with unsigned presets are public by default if the preset is configured correctly
+    // Note: For unsigned upload presets, ensure "Access mode" is set to "Public" in Cloudinary dashboard
+    // Settings → Upload → Upload Presets → [Your Preset] → Show more → Access mode: Public
     
     const endpoint = resourceType === 'image' 
       ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
