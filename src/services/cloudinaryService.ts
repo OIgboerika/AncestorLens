@@ -232,8 +232,8 @@ class CloudinaryService {
     formData.append('folder', `ancestorlens/archives/${documentId}`)
     formData.append('public_id', `archive-${documentId}-${fileName}`)
     formData.append('tags', 'archive,document,heritage')
-    // Note: For unsigned upload presets, ensure "Access mode" is set to "Public" in Cloudinary dashboard
-    // Settings → Upload → Upload Presets → [Your Preset] → Show more → Access mode: Public
+    // Note: For unsigned upload presets, ensure "Access control" is set to "Public" in Cloudinary dashboard
+    // Settings → Upload → Upload Presets → [Your Preset] → Show more → Access control: Public
     
     const endpoint = resourceType === 'image' 
       ? `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`
@@ -250,7 +250,11 @@ class CloudinaryService {
     }
 
     const result = await response.json()
-    return result.secure_url
+    
+    // Return URL without version number for better compatibility
+    // Cloudinary URLs with versions can sometimes have access issues
+    const urlWithoutVersion = result.secure_url.replace(/\/v\d+\//, '/')
+    return urlWithoutVersion
   }
 
   // Generate optimized thumbnail URL

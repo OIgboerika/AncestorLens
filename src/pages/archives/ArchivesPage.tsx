@@ -114,6 +114,73 @@ export default function ArchivesPage() {
     return fileType.includes('pdf') || fileType.includes('image')
   }
 
+  // Helper to get accessible Cloudinary URL (tries multiple formats)
+  const getAccessibleUrl = (url: string): string => {
+    if (!url || !url.includes('cloudinary.com')) return url
+    
+    // Try removing version from URL (sometimes helps with access)
+    const withoutVersion = url.replace(/\/v\d+\//, '/')
+    
+    // Try using http instead of https
+    const httpVersion = withoutVersion.replace('https://', 'http://')
+    
+    // Return the http version without version number as it's more likely to work
+    return httpVersion
+  }
+
+  // Helper to handle file access with better error messages
+  const handleFileAccess = async (fileUrl: string, fileName: string, action: 'view' | 'download') => {
+    const urlsToTry = [
+      getAccessibleUrl(fileUrl), // Try without version, http
+      fileUrl.replace(/\/v\d+\//, '/'), // Try without version, original protocol
+      fileUrl, // Original URL
+    ]
+
+    for (const url of urlsToTry) {
+      try {
+        const response = await fetch(url, { 
+          mode: 'cors',
+          credentials: 'omit'
+        })
+        
+        if (response.ok) {
+          const blob = await response.blob()
+          const objectUrl = window.URL.createObjectURL(blob)
+          
+          if (action === 'view') {
+            window.open(objectUrl, '_blank')
+            setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000)
+          } else {
+            const link = document.createElement('a')
+            link.href = objectUrl
+            link.download = fileName
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000)
+          }
+          return true
+        }
+      } catch (error) {
+        console.error(`Failed to access ${url}:`, error)
+        continue
+      }
+    }
+
+    // If all URLs fail, show helpful error message
+    alert(
+      `Unable to ${action} document. This is likely due to Cloudinary access settings.\n\n` +
+      `To fix this:\n` +
+      `1. Go to Cloudinary Dashboard → Settings → Upload → Upload Presets\n` +
+      `2. Click on your upload preset (m1_default)\n` +
+      `3. Click "Show more..." and set "Access control" to "Public"\n` +
+      `4. Save the preset\n` +
+      `5. Re-upload your documents\n\n` +
+      `Note: Files uploaded before changing this setting will still be private.`
+    )
+    return false
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
@@ -219,24 +286,7 @@ export default function ArchivesPage() {
                   <div className="mt-4 flex items-center gap-2">
                     {isViewable(doc.fileType) && (
                       <button
-                        onClick={async () => {
-                          try {
-                            // Use fetch to handle potential CORS/access issues
-                            const response = await fetch(doc.fileUrl, { mode: 'cors' })
-                            if (response.ok) {
-                              const blob = await response.blob()
-                              const url = window.URL.createObjectURL(blob)
-                              window.open(url, '_blank')
-                              // Clean up after a delay
-                              setTimeout(() => window.URL.revokeObjectURL(url), 100)
-                            } else {
-                              alert('Unable to view document. Please try downloading it instead.')
-                            }
-                          } catch (error) {
-                            console.error('Error viewing document:', error)
-                            alert('Unable to view document. Please try downloading it instead.')
-                          }
-                        }}
+                        onClick={() => handleFileAccess(doc.fileUrl, doc.fileName, 'view')}
                         className="flex-1"
                       >
                         <Button variant="outline" className="w-full flex items-center justify-center gap-2">
@@ -245,28 +295,7 @@ export default function ArchivesPage() {
                       </button>
                     )}
                     <button
-                      onClick={async () => {
-                        try {
-                          // Use fetch to handle potential CORS/access issues
-                          const response = await fetch(doc.fileUrl, { mode: 'cors' })
-                          if (response.ok) {
-                            const blob = await response.blob()
-                            const url = window.URL.createObjectURL(blob)
-                            const link = document.createElement('a')
-                            link.href = url
-                            link.download = doc.fileName
-                            document.body.appendChild(link)
-                            link.click()
-                            document.body.removeChild(link)
-                            window.URL.revokeObjectURL(url)
-                          } else {
-                            alert('Unable to download document. Please check your Cloudinary settings.')
-                          }
-                        } catch (error) {
-                          console.error('Error downloading document:', error)
-                          alert('Unable to download document. Please check your Cloudinary settings.')
-                        }
-                      }}
+                      onClick={() => handleFileAccess(doc.fileUrl, doc.fileName, 'download')}
                       className="flex-1"
                     >
                       <Button variant="outline" className="w-full flex items-center justify-center gap-2">
@@ -307,22 +336,7 @@ export default function ArchivesPage() {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {isViewable(doc.fileType) && (
                           <button
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(doc.fileUrl, { mode: 'cors' })
-                                if (response.ok) {
-                                  const blob = await response.blob()
-                                  const url = window.URL.createObjectURL(blob)
-                                  window.open(url, '_blank')
-                                  setTimeout(() => window.URL.revokeObjectURL(url), 100)
-                                } else {
-                                  alert('Unable to view document. Please try downloading it instead.')
-                                }
-                              } catch (error) {
-                                console.error('Error viewing document:', error)
-                                alert('Unable to view document. Please try downloading it instead.')
-                              }
-                            }}
+                            onClick={() => handleFileAccess(doc.fileUrl, doc.fileName, 'view')}
                           >
                             <Button variant="outline" size="sm" className="flex items-center gap-2">
                               <Eye className="w-4 h-4" /> View
@@ -330,27 +344,7 @@ export default function ArchivesPage() {
                           </button>
                         )}
                         <button
-                          onClick={async () => {
-                            try {
-                              const response = await fetch(doc.fileUrl, { mode: 'cors' })
-                              if (response.ok) {
-                                const blob = await response.blob()
-                                const url = window.URL.createObjectURL(blob)
-                                const link = document.createElement('a')
-                                link.href = url
-                                link.download = doc.fileName
-                                document.body.appendChild(link)
-                                link.click()
-                                document.body.removeChild(link)
-                                window.URL.revokeObjectURL(url)
-                              } else {
-                                alert('Unable to download document. Please check your Cloudinary settings.')
-                              }
-                            } catch (error) {
-                              console.error('Error downloading document:', error)
-                              alert('Unable to download document. Please check your Cloudinary settings.')
-                            }
-                          }}
+                          onClick={() => handleFileAccess(doc.fileUrl, doc.fileName, 'download')}
                         >
                           <Button variant="outline" size="sm" className="flex items-center gap-2">
                             <Download className="w-4 h-4" /> Download
