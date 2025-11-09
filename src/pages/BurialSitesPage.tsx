@@ -851,9 +851,10 @@ const BurialSitesPage = () => {
                   <img 
                     src={site.images && site.images.length > 0 ? site.images[0] : DEFAULT_BURIAL_IMAGE} 
                     alt={site.name}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full ${site.images && site.images.length > 0 ? 'object-cover' : 'object-contain object-center bg-gray-100'}`}
                     onError={(e) => {
                       e.currentTarget.src = DEFAULT_BURIAL_IMAGE
+                      e.currentTarget.className = 'w-full h-full object-contain object-center bg-gray-100'
                     }}
                   />
                 </div>
@@ -1180,11 +1181,11 @@ const BurialSitesPage = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
+                    <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
                       <img 
                         src={DEFAULT_BURIAL_IMAGE} 
                         alt={`${selectedSite.name} - Default placeholder`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain object-center"
                         onError={(e) => {
                           e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='60' font-family='sans-serif' font-size='14' text-anchor='middle' fill='%236b7280'%3EHeadstone%3C/text%3E%3C/svg%3E"
                         }}
