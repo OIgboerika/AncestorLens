@@ -201,7 +201,7 @@ export default function FamilyTimeline({ familyMembers }: FamilyTimelineProps) {
             })}
 
             {/* Data points and lines */}
-            {events.map((event, index) => {
+            {events.map((event) => {
               const xPos = padding * 10 + ((event.year - minYear) / yearRange) * (1000 - padding * 20)
               const birthY = chartHeight + padding - (event.births / maxValue) * chartHeight
               const deathY = chartHeight + padding - (event.deaths / maxValue) * chartHeight
