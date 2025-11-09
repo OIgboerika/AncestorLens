@@ -9,6 +9,9 @@ import { activityService } from '../firebase/services/activityService'
 import { burialSiteService, BurialSite as FirestoreBurialSite } from '../firebase/services/burialSiteService'
 import { cloudinaryService } from '../services/cloudinaryService'
 
+// Default placeholder image for burial sites without photos
+const DEFAULT_BURIAL_IMAGE = '/images/burial filler image.JPG'
+
 interface BurialSite {
   id: string | number
   name: string
@@ -846,11 +849,11 @@ const BurialSitesPage = () => {
               <div className="lg:col-span-1">
                 <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
                   <img 
-                    src={site.images[0] || ''} 
+                    src={site.images && site.images.length > 0 ? site.images[0] : DEFAULT_BURIAL_IMAGE} 
                     alt={site.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='60' font-family='sans-serif' font-size='14' text-anchor='middle' fill='%236b7280'%3EHeadstone%3C/text%3E%3C/svg%3E"
+                      e.currentTarget.src = DEFAULT_BURIAL_IMAGE
                     }}
                   />
                 </div>
@@ -1159,9 +1162,9 @@ const BurialSitesPage = () => {
                   <Button variant="outline" size="sm" onClick={() => selectedSite && openEditModal(selectedSite)}>Edit</Button>
                 </div>
                 {/* Site Images */}
-                {selectedSite.images && selectedSite.images.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-3">Photos</h4>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Photos</h4>
+                  {selectedSite.images && selectedSite.images.length > 0 ? (
                     <div className="grid grid-cols-2 gap-4">
                       {selectedSite.images.map((image, index) => (
                         <div key={index} className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
@@ -1170,14 +1173,25 @@ const BurialSitesPage = () => {
                             alt={`${selectedSite.name} - Photo ${index + 1}`}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='60' font-family='sans-serif' font-size='14' text-anchor='middle' fill='%236b7280'%3EHeadstone%3C/text%3E%3C/svg%3E"
+                              e.currentTarget.src = DEFAULT_BURIAL_IMAGE
                             }}
                           />
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
+                      <img 
+                        src={DEFAULT_BURIAL_IMAGE} 
+                        alt={`${selectedSite.name} - Default placeholder`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='60' font-family='sans-serif' font-size='14' text-anchor='middle' fill='%236b7280'%3EHeadstone%3C/text%3E%3C/svg%3E"
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
 
                 {/* Site Information */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
