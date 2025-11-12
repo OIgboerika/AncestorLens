@@ -233,9 +233,76 @@ export default function FamilyTreePage() {
   // Load members: Firestore realtime when signed-in, else localStorage
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
-    // Always load whatever is in local cache first for instant render
+    
+    // Always load from localStorage first for instant render
     loadFamilyMembers()
+    
+    // Then load from Firestore on mount and set up real-time listener
+    const loadFromFirestore = async () => {
+      if (!user?.uid) return
+      
+      try {
+        const firestoreMembers = await familyService.getFamilyMembers(user.uid)
+        if (firestoreMembers && firestoreMembers.length > 0) {
+          // Convert Firestore members to localStorage format
+          const convertedMembers = firestoreMembers.map(member => ({
+            id: member.id || Date.now(),
+            name: member.name,
+            firstName: member.firstName,
+            lastName: member.lastName,
+            middleName: member.middleName,
+            role: member.role,
+            birthYear: member.birthYear,
+            deathYear: member.deathYear,
+            birthDate: member.birthDate,
+            deathDate: member.deathDate,
+            birthPlace: member.birthPlace,
+            deathPlace: member.deathPlace,
+            location: member.location,
+            city: member.city,
+            state: member.state,
+            country: member.country,
+            coordinates: member.coordinates,
+            relationship: member.relationship,
+            gender: member.gender,
+            occupation: member.occupation,
+            email: member.email,
+            phone: member.phone,
+            address: member.address,
+            bio: member.bio,
+            image: member.image,
+            heritageTags: member.heritageTags,
+            parentId: member.parentId,
+            hasChildren: member.hasChildren,
+            hasParents: member.hasParents
+          }))
+          
+          // Merge with existing localStorage data (don't overwrite)
+          const localMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+          const mergedMembers = [...convertedMembers]
+          
+          // Add local members that aren't in Firestore (in case of sync issues)
+          localMembers.forEach((local: any) => {
+            if (!mergedMembers.find((m: any) => m.id === local.id || m.name === local.name)) {
+              mergedMembers.push(local)
+            }
+          })
+          
+          localStorage.setItem('familyMembers', JSON.stringify(mergedMembers))
+          console.log('Family Tree - Loaded from Firestore and merged:', mergedMembers.length, 'members')
+          loadFamilyMembers()
+        }
+      } catch (error) {
+        console.error('Error loading from Firestore:', error)
+        // Keep using localStorage data
+      }
+    }
+    
     if (user?.uid) {
+      // Load from Firestore on mount
+      loadFromFirestore()
+      
+      // Set up real-time listener
       unsubscribe = familyService.onFamilyMembersChange(user.uid, async (members) => {
         try {
           if (members && members.length > 0) {
@@ -272,14 +339,26 @@ export default function FamilyTreePage() {
               hasParents: member.hasParents
             }))
             
-            // Update localStorage with Firestore data
-            localStorage.setItem('familyMembers', JSON.stringify(convertedMembers))
-            console.log('Family Tree - Updated localStorage with Firestore data:', convertedMembers)
+            // Merge with existing localStorage data
+            const localMembers = JSON.parse(localStorage.getItem('familyMembers') || '[]')
+            const mergedMembers = [...convertedMembers]
+            
+            // Add local members that aren't in Firestore
+            localMembers.forEach((local: any) => {
+              if (!mergedMembers.find((m: any) => m.id === local.id || m.name === local.name)) {
+                mergedMembers.push(local)
+              }
+            })
+            
+            localStorage.setItem('familyMembers', JSON.stringify(mergedMembers))
+            console.log('Family Tree - Updated from Firestore listener:', mergedMembers.length, 'members')
+            loadFamilyMembers()
           }
+          // If members is empty, don't clear localStorage - keep existing data
         } catch (error) {
           console.error('Error processing Firestore members:', error)
+          // Keep using existing localStorage data
         }
-        loadFamilyMembers()
       })
     } else {
       loadFamilyMembers()

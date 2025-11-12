@@ -64,11 +64,12 @@ const BurialSitesPage = () => {
   // Load from Firestore or localStorage
   useEffect(() => {
     const loadBurialSites = async () => {
+      // Always load from localStorage first for instant render
+      const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
+      setSites(saved)
+      setLoading(false)
+      
       if (!user?.uid) {
-        // Fallback to localStorage if no user
-        const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
-        setSites(saved)
-        setLoading(false)
         return
       }
 
@@ -76,31 +77,41 @@ const BurialSitesPage = () => {
         // Load from Firestore
         const firestoreSites = await burialSiteService.getBurialSites(user.uid)
         
-        // Convert Firestore sites to local format
-        const convertedSites: BurialSite[] = firestoreSites.map(site => ({
-          id: site.id || Date.now().toString(),
-          name: site.name,
-          deceasedName: site.deceasedName,
-          birthYear: site.birthYear,
-          deathYear: site.deathYear,
-          location: site.location,
-          coordinates: site.coordinates,
-          description: site.description,
-          visitNotes: site.visitNotes,
-          lastVisit: site.lastVisit,
-          images: site.images,
-          familyAccess: site.familyAccess,
-          visible: site.visible !== undefined ? site.visible : true
-        }))
+        if (firestoreSites && firestoreSites.length > 0) {
+          // Convert Firestore sites to local format
+          const convertedSites: BurialSite[] = firestoreSites.map(site => ({
+            id: site.id || Date.now().toString(),
+            name: site.name,
+            deceasedName: site.deceasedName,
+            birthYear: site.birthYear,
+            deathYear: site.deathYear,
+            location: site.location,
+            coordinates: site.coordinates,
+            description: site.description,
+            visitNotes: site.visitNotes,
+            lastVisit: site.lastVisit,
+            images: site.images || [],
+            familyAccess: site.familyAccess,
+            visible: site.visible !== undefined ? site.visible : true
+          }))
 
-        setSites(convertedSites)
+          // Merge with localStorage data
+          const mergedSites = [...convertedSites]
+          
+          // Add local sites that aren't in Firestore
+          saved.forEach((local: BurialSite) => {
+            if (!mergedSites.find((s: BurialSite) => s.id === local.id || s.name === local.name)) {
+              mergedSites.push(local)
+            }
+          })
+
+          localStorage.setItem('burialSites', JSON.stringify(mergedSites))
+          setSites(mergedSites)
+        }
+        // If firestoreSites is empty, keep using localStorage data
       } catch (error) {
         console.error('Error loading burial sites:', error)
-        // Fallback to localStorage
-        const saved = JSON.parse(localStorage.getItem('burialSites') || '[]') as BurialSite[]
-        setSites(saved)
-      } finally {
-        setLoading(false)
+        // Keep using localStorage data
       }
     }
 

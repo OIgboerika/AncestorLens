@@ -46,7 +46,8 @@ export const familyService = {
       return members.map(convertTimestamps) as FamilyMember[]
     } catch (error) {
       console.error('Error fetching family members:', error)
-      throw error
+      // Return empty array instead of throwing to prevent UI breaking
+      return []
     }
   },
 

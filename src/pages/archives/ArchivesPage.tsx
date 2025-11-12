@@ -35,23 +35,71 @@ export default function ArchivesPage() {
   // Load realtime from Firestore if signed in; otherwise fall back to localStorage
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
+    
+    // Always load from localStorage first for instant render
     const loadLocal = () => {
       const saved = JSON.parse(localStorage.getItem('archives') || '[]')
       setDocuments(saved)
     }
+    loadLocal()
+    
+    // Then load from Firestore on mount
+    const loadFromFirestore = async () => {
+      if (!user?.uid) return
+      
+      try {
+        const firestoreDocuments = await archiveService.getArchiveDocuments(user.uid)
+        if (firestoreDocuments && firestoreDocuments.length > 0) {
+          // Merge with localStorage data
+          const localDocuments = JSON.parse(localStorage.getItem('archives') || '[]')
+          const mergedDocuments = [...firestoreDocuments]
+          
+          // Add local documents that aren't in Firestore
+          localDocuments.forEach((local: any) => {
+            if (!mergedDocuments.find((d: any) => d.id === local.id || (d.title === local.title && d.uploadDate === local.uploadDate))) {
+              mergedDocuments.push(local)
+            }
+          })
+          
+          localStorage.setItem('archives', JSON.stringify(mergedDocuments))
+          setDocuments(mergedDocuments as any)
+        }
+      } catch (error) {
+        console.error('Error loading from Firestore:', error)
+        // Keep using localStorage data
+      }
+    }
+    
     if (user?.uid) {
+      // Load from Firestore on mount
+      loadFromFirestore()
+      
+      // Set up real-time listener
       unsubscribe = archiveService.onArchiveDocumentsChange(user.uid, (docs) => {
-        try { localStorage.setItem('archives', JSON.stringify(docs)) } catch {}
-        if (docs && docs.length > 0) {
-          setDocuments(docs as any)
-        } else {
-          const saved = JSON.parse(localStorage.getItem('archives') || '[]')
-          setDocuments(saved)
+        try {
+          if (docs && docs.length > 0) {
+            // Merge with localStorage data
+            const localDocuments = JSON.parse(localStorage.getItem('archives') || '[]')
+            const mergedDocuments = [...docs]
+            
+            // Add local documents that aren't in Firestore
+            localDocuments.forEach((local: any) => {
+              if (!mergedDocuments.find((d: any) => d.id === local.id || (d.title === local.title && d.uploadDate === local.uploadDate))) {
+                mergedDocuments.push(local)
+              }
+            })
+            
+            localStorage.setItem('archives', JSON.stringify(mergedDocuments))
+            setDocuments(mergedDocuments as any)
+          }
+          // If docs is empty, don't clear localStorage - keep existing data
+        } catch (error) {
+          console.error('Error processing Firestore documents:', error)
+          // Keep using existing localStorage data
         }
       })
-    } else {
-      loadLocal()
     }
+    
     return () => { if (unsubscribe) unsubscribe() }
   }, [user])
 

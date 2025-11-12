@@ -39,23 +39,71 @@ export default function CulturalMemoriesPage() {
   // Load realtime from Firestore if signed in; otherwise fall back to localStorage
   useEffect(() => {
     let unsubscribe: (() => void) | undefined
+    
+    // Always load from localStorage first for instant render
     const loadLocal = () => {
       const saved = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
       setMemories(saved)
     }
+    loadLocal()
+    
+    // Then load from Firestore on mount
+    const loadFromFirestore = async () => {
+      if (!user?.uid) return
+      
+      try {
+        const firestoreMemories = await culturalMemoryService.getCulturalMemories(user.uid)
+        if (firestoreMemories && firestoreMemories.length > 0) {
+          // Merge with localStorage data
+          const localMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+          const mergedMemories = [...firestoreMemories]
+          
+          // Add local memories that aren't in Firestore
+          localMemories.forEach((local: any) => {
+            if (!mergedMemories.find((m: any) => m.id === local.id || (m.title === local.title && m.uploadDate === local.uploadDate))) {
+              mergedMemories.push(local)
+            }
+          })
+          
+          localStorage.setItem('culturalMemories', JSON.stringify(mergedMemories))
+          setMemories(mergedMemories as any)
+        }
+      } catch (error) {
+        console.error('Error loading from Firestore:', error)
+        // Keep using localStorage data
+      }
+    }
+    
     if (user?.uid) {
+      // Load from Firestore on mount
+      loadFromFirestore()
+      
+      // Set up real-time listener
       unsubscribe = culturalMemoryService.onCulturalMemoriesChange(user.uid, (docs) => {
-        try { localStorage.setItem('culturalMemories', JSON.stringify(docs)) } catch {}
-        if (docs && docs.length > 0) {
-          setMemories(docs as any)
-        } else {
-          const saved = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
-          setMemories(saved)
+        try {
+          if (docs && docs.length > 0) {
+            // Merge with localStorage data
+            const localMemories = JSON.parse(localStorage.getItem('culturalMemories') || '[]')
+            const mergedMemories = [...docs]
+            
+            // Add local memories that aren't in Firestore
+            localMemories.forEach((local: any) => {
+              if (!mergedMemories.find((m: any) => m.id === local.id || (m.title === local.title && m.uploadDate === local.uploadDate))) {
+                mergedMemories.push(local)
+              }
+            })
+            
+            localStorage.setItem('culturalMemories', JSON.stringify(mergedMemories))
+            setMemories(mergedMemories as any)
+          }
+          // If docs is empty, don't clear localStorage - keep existing data
+        } catch (error) {
+          console.error('Error processing Firestore memories:', error)
+          // Keep using existing localStorage data
         }
       })
-    } else {
-      loadLocal()
     }
+    
     return () => { if (unsubscribe) unsubscribe() }
   }, [user])
 

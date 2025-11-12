@@ -32,7 +32,8 @@ export const culturalMemoryService = {
       return memories.map(convertTimestamps) as CulturalMemory[]
     } catch (error) {
       console.error('Error fetching cultural memories:', error)
-      throw error
+      // Return empty array instead of throwing to prevent UI breaking
+      return []
     }
   },
 

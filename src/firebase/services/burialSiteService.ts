@@ -30,7 +30,8 @@ export const burialSiteService = {
       return sites.map(convertTimestamps) as BurialSite[]
     } catch (error) {
       console.error('Error fetching burial sites:', error)
-      throw error
+      // Return empty array instead of throwing to prevent UI breaking
+      return []
     }
   },
 

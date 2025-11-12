@@ -28,7 +28,8 @@ export const archiveService = {
       return documents.map(convertTimestamps) as ArchiveDocument[]
     } catch (error) {
       console.error('Error fetching archive documents:', error)
-      throw error
+      // Return empty array instead of throwing to prevent UI breaking
+      return []
     }
   },
 
