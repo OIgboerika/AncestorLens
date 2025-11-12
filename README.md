@@ -462,3 +462,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Note:** This is a capstone project focused on preserving African cultural heritage through modern web technology. The platform is designed to scale across Africa while maintaining cultural sensitivity and local relevance.
 
 **🌍 Preserving African Heritage, One Story at a Time**
+
+## trigger a response
