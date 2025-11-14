@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { geocodingService } from '../geocodingService'
-import { mockGeocodingResponse, mockReverseGeocodingResponse, mockGeocodingFetch } from '../../test/mocks/geocoding'
+import { mockGeocodingFetch } from '../../test/mocks/geocoding'
 
 // Mock global fetch
 global.fetch = vi.fn()
@@ -212,7 +212,7 @@ describe('geocodingService', () => {
 
     it('should return null on geolocation error', async () => {
       const mockGeolocation = {
-        getCurrentPosition: vi.fn((success, error) => {
+        getCurrentPosition: vi.fn((_success, error) => {
           error(new Error('Permission denied'))
         }),
       }

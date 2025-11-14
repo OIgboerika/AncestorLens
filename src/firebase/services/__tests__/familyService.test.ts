@@ -26,7 +26,7 @@ describe('familyService', () => {
     role: 'Living',
     birthYear: '1990',
     relationship: 'Self',
-  }
+  } as FamilyMember
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -34,7 +34,7 @@ describe('familyService', () => {
 
   describe('getFamilyMembers', () => {
     it('should fetch family members for a user', async () => {
-      vi.mocked(firestoreService.firestoreService.getDocs).mockResolvedValue([mockMember])
+      vi.mocked(firestoreService.firestoreService.getDocs).mockResolvedValue([{ ...mockMember, id: 'member-123' }])
 
       const result = await familyService.getFamilyMembers(mockUserId)
 
@@ -66,7 +66,7 @@ describe('familyService', () => {
 
   describe('getFamilyMember', () => {
     it('should fetch a single family member', async () => {
-      vi.mocked(firestoreService.firestoreService.getDoc).mockResolvedValue(mockMember)
+      vi.mocked(firestoreService.firestoreService.getDoc).mockResolvedValue({ ...mockMember, id: 'member-123' })
 
       const result = await familyService.getFamilyMember('member-123')
 
@@ -228,7 +228,7 @@ describe('familyService', () => {
       const unsubscribe = vi.fn()
 
       vi.mocked(firestoreService.firestoreService.onSnapshot).mockImplementation(
-        (collection, cb) => {
+        (_collection, cb) => {
           // Simulate snapshot callback
           cb([mockMember])
           return unsubscribe

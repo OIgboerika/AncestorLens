@@ -44,7 +44,7 @@ describe('cloudinaryService', () => {
       await cloudinaryService.uploadImage(mockFile, { folder: 'test-folder' })
 
       const callArgs = mockFetchFn.mock.calls[0]
-      expect(callArgs[0]).toContain('test-cloud/image/upload')
+      expect(callArgs?.[0]).toContain('test-cloud/image/upload')
     })
 
     it('should upload image with tags', async () => {
@@ -162,7 +162,7 @@ describe('cloudinaryService', () => {
 
       expect(result).toBeDefined()
       const callArgs = mockFetchFn.mock.calls[0]
-      expect(callArgs[0]).toContain('raw/upload') // PDFs use raw endpoint
+      expect(callArgs?.[0]).toContain('raw/upload') // PDFs use raw endpoint
     })
 
     it('should upload image document as image', async () => {
@@ -173,7 +173,7 @@ describe('cloudinaryService', () => {
       await cloudinaryService.uploadArchiveDocument(mockFile, 'doc-123')
 
       const callArgs = mockFetchFn.mock.calls[0]
-      expect(callArgs[0]).toContain('image/upload')
+      expect(callArgs?.[0]).toContain('image/upload')
     })
 
     it('should remove version number from URL', async () => {

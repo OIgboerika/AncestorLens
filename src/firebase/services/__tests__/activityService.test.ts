@@ -27,17 +27,6 @@ vi.mock('../../config', () => ({
 
 describe('activityService', () => {
   const mockUserId = 'user-123'
-  const mockActivity: Activity = {
-    id: 'activity-123',
-    userId: mockUserId,
-    type: 'family_member_added',
-    title: 'Family Member Added',
-    description: 'John Doe was added to the family tree',
-    timestamp: Timestamp.now(),
-    metadata: {
-      familyMemberId: 'member-123',
-    },
-  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -106,6 +95,9 @@ describe('activityService', () => {
             }),
           },
         ],
+        forEach: function(fn: (doc: any) => void) {
+          this.docs.forEach(fn)
+        }
       }
 
       vi.mocked(collection).mockReturnValue(mockCollection as any)
@@ -161,9 +153,9 @@ describe('activityService', () => {
       vi.mocked(query).mockReturnValue(mockQuery as any)
       vi.mocked(where).mockReturnValue({} as any)
       vi.mocked(limit).mockReturnValue({} as any)
-      vi.mocked(onSnapshot).mockImplementation((q, cb, onError) => {
+      vi.mocked(onSnapshot).mockImplementation((_q, cb, _onError) => {
         // Simulate snapshot callback
-        cb({
+        const mockSnapshot = {
           docs: [
             {
               id: 'activity-123',
@@ -176,7 +168,11 @@ describe('activityService', () => {
               }),
             },
           ],
-        } as any)
+          forEach: (fn: (doc: any) => void) => {
+            mockSnapshot.docs.forEach(fn)
+          }
+        } as any
+        cb(mockSnapshot)
         return unsubscribe
       })
 
@@ -197,7 +193,7 @@ describe('activityService', () => {
       vi.mocked(query).mockReturnValue(mockQuery as any)
       vi.mocked(where).mockReturnValue({} as any)
       vi.mocked(limit).mockReturnValue({} as any)
-      vi.mocked(onSnapshot).mockImplementation((q, cb, onError) => {
+      vi.mocked(onSnapshot).mockImplementation((_q, _cb, onError) => {
         // Simulate error
         if (onError) {
           onError(new Error('Permission denied') as any)
@@ -218,7 +214,7 @@ describe('activityService', () => {
       vi.mocked(collection).mockReturnValue(mockCollection as any)
       mockAddDoc.mockResolvedValue({ id: 'activity-123' } as any)
 
-      await activityService.logFamilyMemberAdded(mockUserId, 'member-123', 'John Doe')
+      await activityService.logFamilyMemberAdded(mockUserId, 'John Doe', 'member-123')
 
       expect(mockAddDoc).toHaveBeenCalledWith(
         mockCollection,
@@ -239,7 +235,7 @@ describe('activityService', () => {
       vi.mocked(collection).mockReturnValue(mockCollection as any)
       mockAddDoc.mockResolvedValue({ id: 'activity-123' } as any)
 
-      await activityService.logMemoryUploaded(mockUserId, 'memory-123', 'Test Memory')
+      await activityService.logMemoryUploaded(mockUserId, 'Test Memory', 'memory-123', 'image')
 
       expect(mockAddDoc).toHaveBeenCalledWith(
         mockCollection,
@@ -258,7 +254,7 @@ describe('activityService', () => {
       vi.mocked(collection).mockReturnValue(mockCollection as any)
       mockAddDoc.mockResolvedValue({ id: 'activity-123' } as any)
 
-      await activityService.logBurialSiteAdded(mockUserId, 'site-123', 'Test Site')
+      await activityService.logBurialSiteAdded(mockUserId, 'Test Site', 'site-123')
 
       expect(mockAddDoc).toHaveBeenCalledWith(
         mockCollection,
@@ -277,7 +273,7 @@ describe('activityService', () => {
       vi.mocked(collection).mockReturnValue(mockCollection as any)
       mockAddDoc.mockResolvedValue({ id: 'activity-123' } as any)
 
-      await activityService.logArchiveUploaded(mockUserId, 'archive-123', 'Test Document')
+      await activityService.logArchiveUploaded(mockUserId, 'Test Document', 'archive-123')
 
       expect(mockAddDoc).toHaveBeenCalledWith(
         mockCollection,
