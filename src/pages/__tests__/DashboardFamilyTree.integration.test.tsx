@@ -3,16 +3,20 @@ import { render, screen, waitFor } from '../../test/utils/testUtils'
 import DashboardPage from '../DashboardPage'
 import { activityService } from '../../firebase/services/activityService'
 import { familyService } from '../../firebase/services/familyService'
-import { useAuth } from '../../contexts/AuthContext'
+
+// Mock Firebase config first
+vi.mock('../../firebase/config', () => ({
+  auth: {},
+  db: {},
+  storage: {},
+}))
 
 // Mock services
 vi.mock('../../firebase/services/activityService')
 vi.mock('../../firebase/services/familyService')
-vi.mock('../../contexts/AuthContext')
 
 const mockActivityService = vi.mocked(activityService)
 const mockFamilyService = vi.mocked(familyService)
-const mockUseAuth = vi.mocked(useAuth)
 
 describe('Dashboard and Family Tree Integration', () => {
   const mockUser = {
@@ -57,17 +61,10 @@ describe('Dashboard and Family Tree Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUseAuth.mockReturnValue({
-      user: mockUser,
-      loading: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signInWithGoogle: vi.fn(),
-      signOut: vi.fn(),
-    } as any)
 
     mockActivityService.onActivitiesChange.mockImplementation((userId, callback) => {
-      setTimeout(() => callback(mockActivities), 100)
+      // Call callback immediately with mock data
+      Promise.resolve().then(() => callback(mockActivities))
       return vi.fn()
     })
 
@@ -77,14 +74,15 @@ describe('Dashboard and Family Tree Integration', () => {
   it('should display family timeline with correct data from family service', async () => {
     render(<DashboardPage />)
 
+    // Wait for AuthProvider to initialize and component to load
     await waitFor(() => {
       expect(mockFamilyService.getFamilyMembers).toHaveBeenCalledWith('test-user-123')
-    })
+    }, { timeout: 3000 })
 
     // FamilyTimeline should receive the family members
     await waitFor(() => {
       expect(screen.getByText(/Family Timeline/i)).toBeInTheDocument()
-    })
+    }, { timeout: 3000 })
   })
 
   it('should show recent activity when family member is added', async () => {
@@ -92,12 +90,12 @@ describe('Dashboard and Family Tree Integration', () => {
 
     await waitFor(() => {
       expect(mockActivityService.onActivitiesChange).toHaveBeenCalled()
-    })
+    }, { timeout: 3000 })
 
     // Activity should be displayed
     await waitFor(() => {
       expect(screen.getByText(/Family Member Added/i)).toBeInTheDocument()
-    })
+    }, { timeout: 3000 })
   })
 
   it('should synchronize family members and activities', async () => {
@@ -107,10 +105,12 @@ describe('Dashboard and Family Tree Integration', () => {
     await waitFor(() => {
       expect(mockFamilyService.getFamilyMembers).toHaveBeenCalled()
       expect(mockActivityService.onActivitiesChange).toHaveBeenCalled()
-    })
+    }, { timeout: 3000 })
 
     // Both components should render
-    expect(screen.getByText(/Family Timeline/i)).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText(/Family Timeline/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
   })
 })
 

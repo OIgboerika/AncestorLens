@@ -3,16 +3,20 @@ import { render, screen, waitFor } from '../../test/utils/testUtils'
 import DashboardPage from '../DashboardPage'
 import { activityService } from '../../firebase/services/activityService'
 import { familyService } from '../../firebase/services/familyService'
-import { useAuth } from '../../contexts/AuthContext'
+
+// Mock Firebase config first
+vi.mock('../../firebase/config', () => ({
+  auth: {},
+  db: {},
+  storage: {},
+}))
 
 // Mock the services
 vi.mock('../../firebase/services/activityService')
 vi.mock('../../firebase/services/familyService')
-vi.mock('../../contexts/AuthContext')
 
 const mockActivityService = vi.mocked(activityService)
 const mockFamilyService = vi.mocked(familyService)
-const mockUseAuth = vi.mocked(useAuth)
 
 describe('DashboardPage Integration', () => {
   const mockUser = {
@@ -48,18 +52,11 @@ describe('DashboardPage Integration', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockUseAuth.mockReturnValue({
-      user: mockUser,
-      loading: false,
-      signIn: vi.fn(),
-      signUp: vi.fn(),
-      signInWithGoogle: vi.fn(),
-      signOut: vi.fn(),
-    } as any)
 
     // Mock activity service
     mockActivityService.onActivitiesChange.mockImplementation((userId, callback) => {
-      setTimeout(() => callback(mockActivities), 100)
+      // Call callback immediately with mock data
+      Promise.resolve().then(() => callback(mockActivities))
       return vi.fn() // Return unsubscribe function
     })
 
@@ -67,16 +64,22 @@ describe('DashboardPage Integration', () => {
     mockFamilyService.getFamilyMembers.mockResolvedValue(mockFamilyMembers as any)
   })
 
-  it('should render dashboard with user greeting', () => {
+  it('should render dashboard with user greeting', async () => {
     render(<DashboardPage />)
     
-    expect(screen.getByText(/Welcome, Test/i)).toBeInTheDocument()
+    // Wait for AuthProvider to initialize and user to be available
+    await waitFor(() => {
+      expect(screen.getByText(/Welcome, Test/i)).toBeInTheDocument()
+    }, { timeout: 3000 })
   })
 
-  it('should display navigation cards', () => {
+  it('should display navigation cards', async () => {
     render(<DashboardPage />)
     
-    expect(screen.getByText(/Manage Family Tree/i)).toBeInTheDocument()
+    // Wait for component to render
+    await waitFor(() => {
+      expect(screen.getByText(/Manage Family Tree/i)).toBeInTheDocument()
+    })
     expect(screen.getByText(/Explore Burial Sites/i)).toBeInTheDocument()
     expect(screen.getByText(/Manage Archives/i)).toBeInTheDocument()
   })

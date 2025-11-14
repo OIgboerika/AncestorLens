@@ -1,8 +1,11 @@
-import { ReactElement } from 'react'
+import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '../../contexts/AuthContext'
 import { vi } from 'vitest'
+
+// Import auth service mock to ensure it's loaded
+import '../../test/mocks/authService'
 
 // Mock Auth Context
 const mockAuthContext = {
@@ -32,7 +35,9 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
 const customRender = (
   ui: ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>,
-) => render(ui, { wrapper: AllTheProviders, ...options })
+) => {
+  return render(ui, { wrapper: AllTheProviders, ...options })
+}
 
 // Re-export everything
 export * from '@testing-library/react'

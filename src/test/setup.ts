@@ -2,6 +2,12 @@ import { expect, afterEach } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import * as matchers from '@testing-library/jest-dom/matchers'
 
+// Import mocks to ensure they're loaded before tests
+import './mocks/authService'
+import './mocks/firebase'
+import './mocks/cloudinary'
+import './mocks/geocoding'
+
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers)
 
