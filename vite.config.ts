@@ -11,4 +11,10 @@ export default defineConfig({
   optimizeDeps: {
     include: ['cloudinary'],
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    css: true,
+  },
 })
