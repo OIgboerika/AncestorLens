@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Users, MapPin, Mic, Send, CheckCircle, ChevronLeft, ChevronRight, Star, Play } from 'lucide-react'
+import { ArrowRight, Users, MapPin, Mic, Send, CheckCircle, Star } from 'lucide-react'
 import LandingNavbar from '../components/ui/LandingNavbar/LandingNavbar'
 
 const LandingPage = () => {
