@@ -32,6 +32,7 @@ interface FamilyMember {
   hasChildren?: boolean
   hasParents?: boolean
   image?: string
+  gender?: string
 }
 
 export default function FamilyTreePage() {
