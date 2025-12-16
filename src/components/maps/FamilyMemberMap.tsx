@@ -403,9 +403,9 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         })
         
         // After binding, update the popup wrapper to remove default styling
-        marker.on('popupopen', function() {
+        marker.on('popupopen', () => {
           setTimeout(() => {
-            const popup = this.getPopup()
+            const popup = marker.getPopup()
             const element = popup.getElement()
             if (element) {
               const wrapper = element.querySelector('.leaflet-popup-content-wrapper') as HTMLElement
