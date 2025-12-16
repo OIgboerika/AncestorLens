@@ -1,10 +1,9 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 
 const LandingNavbar = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const location = useLocation()
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId)
