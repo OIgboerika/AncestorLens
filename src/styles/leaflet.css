@@ -36,6 +36,7 @@
   padding: 0 !important;
   border-radius: 0 !important;
   border: none !important;
+  background-color: transparent !important;
 }
 
 .modern-family-popup .leaflet-popup-content {
@@ -43,6 +44,15 @@
   padding: 0 !important;
   width: auto !important;
   min-width: 280px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.modern-family-popup .leaflet-popup-content > div {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px) !important;
+  background-size: 12px 12px !important;
+  opacity: 1 !important;
 }
 
 .modern-family-popup .leaflet-popup-tip {

@@ -198,16 +198,17 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         
         const popupContent = `
           <div style="
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
-            background-size: 12px 12px;
-            border-radius: 16px;
-            padding: 20px;
-            min-width: 280px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            position: relative;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+            background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px) !important;
+            background-size: 12px 12px !important;
+            border-radius: 16px !important;
+            padding: 20px !important;
+            min-width: 280px !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1) !important;
+            color: white !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+            position: relative !important;
+            opacity: 1 !important;
           ">
             <!-- Close button -->
             <button onclick="this.closest('.leaflet-popup').closePopup()" style="
@@ -412,16 +413,24 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
               const wrapper = element.querySelector('.leaflet-popup-content-wrapper') as HTMLElement
               if (wrapper) {
                 wrapper.classList.add('modern-family-popup-wrapper')
-                wrapper.style.background = 'transparent'
-                wrapper.style.boxShadow = 'none'
-                wrapper.style.padding = '0'
-                wrapper.style.borderRadius = '0'
-                wrapper.style.border = 'none'
+                wrapper.style.setProperty('background', 'transparent', 'important')
+                wrapper.style.setProperty('box-shadow', 'none', 'important')
+                wrapper.style.setProperty('padding', '0', 'important')
+                wrapper.style.setProperty('border-radius', '0', 'important')
+                wrapper.style.setProperty('border', 'none', 'important')
+                wrapper.style.setProperty('opacity', '1', 'important')
               }
               const content = element.querySelector('.leaflet-popup-content') as HTMLElement
               if (content) {
-                content.style.margin = '0'
-                content.style.padding = '0'
+                content.style.setProperty('margin', '0', 'important')
+                content.style.setProperty('padding', '0', 'important')
+                content.style.setProperty('background', 'transparent', 'important')
+              }
+              // Also ensure the inner div has solid background
+              const innerDiv = element.querySelector('.leaflet-popup-content > div') as HTMLElement
+              if (innerDiv) {
+                innerDiv.style.setProperty('background', 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', 'important')
+                innerDiv.style.setProperty('opacity', '1', 'important')
               }
             }
           }, 10)
