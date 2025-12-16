@@ -19,7 +19,7 @@ const Card = ({ children, className = '', hoverable = true, padding = 'md' }: Ca
     : ''
   
   return (
-    <div className={`${paddingClasses[padding]} ${hoverClasses} bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 ${className}`}>
+    <div className={`${paddingClasses[padding]} ${hoverClasses} bg-white dark:bg-gray-800 rounded-2xl shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-100 dark:border-gray-700 ${className}`}>
       {children}
     </div>
   )

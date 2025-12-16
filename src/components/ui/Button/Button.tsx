@@ -22,10 +22,10 @@ const Button = ({
   const baseClasses = 'font-semibold rounded-2xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-ancestor-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none'
   
   const variantClasses = {
-    primary: 'bg-ancestor-primary hover:bg-ancestor-dark text-white shadow-lg shadow-ancestor-primary/20 hover:shadow-xl hover:shadow-ancestor-primary/30 transform hover:-translate-y-0.5 active:translate-y-0',
+    primary: 'bg-ancestor-primary hover:bg-ancestor-dark text-white shadow-lg shadow-ancestor-primary/20 hover:shadow-xl hover:shadow-ancestor-primary/30 transform hover:-translate-y-0.5 active:translate-y-0 dark:shadow-ancestor-primary/30',
     secondary: 'bg-ancestor-secondary hover:bg-ancestor-accent text-white shadow-lg shadow-ancestor-secondary/20 hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0',
-    outline: 'border-2 border-ancestor-primary text-ancestor-primary hover:bg-ancestor-primary hover:text-white shadow-sm hover:shadow-md bg-white',
-    ghost: 'text-ancestor-primary hover:bg-ancestor-light/50 rounded-xl'
+    outline: 'border-2 border-ancestor-primary text-ancestor-primary hover:bg-ancestor-primary hover:text-white shadow-sm hover:shadow-md bg-white dark:bg-gray-800 dark:text-ancestor-primary dark:border-ancestor-primary',
+    ghost: 'text-ancestor-primary hover:bg-ancestor-light/50 dark:hover:bg-gray-800 rounded-xl'
   }
   
   const sizeClasses = {

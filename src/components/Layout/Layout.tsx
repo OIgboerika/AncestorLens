@@ -4,7 +4,7 @@ import Topbar from '../ui/Topbar/Topbar'
 
 const Layout = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-200">
       <Sidebar />
       <Topbar />
       <main className="md:pl-64 pt-20 md:pt-16">
