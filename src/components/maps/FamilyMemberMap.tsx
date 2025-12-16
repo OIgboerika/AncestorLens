@@ -406,6 +406,7 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         marker.on('popupopen', () => {
           setTimeout(() => {
             const popup = marker.getPopup()
+            if (!popup) return
             const element = popup.getElement()
             if (element) {
               const wrapper = element.querySelector('.leaflet-popup-content-wrapper') as HTMLElement
