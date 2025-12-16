@@ -575,12 +575,12 @@ const LandingPage = () => {
           <div className="mt-12 text-center">
             <p className="text-gray-600 mb-4">You can also reach us directly at:</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-ancestor-primary">
-              <a href="mailto:support@ancestorelens.com" className="hover:text-ancestor-dark transition">
+              <a href="mailto:o.igboerika@alustudent.com" className="hover:text-ancestor-dark transition">
                 support@ancestorelens.com
               </a>
               <span className="hidden sm:inline">•</span>
               <a href="tel:+1234567890" className="hover:text-ancestor-dark transition">
-                +1 (234) 567-890
+                +250 792 342 75785
               </a>
             </div>
           </div>
