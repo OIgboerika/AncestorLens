@@ -576,7 +576,7 @@ const LandingPage = () => {
             <p className="text-gray-600 mb-4">You can also reach us directly at:</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-ancestor-primary">
               <a href="mailto:o.igboerika@alustudent.com" className="hover:text-ancestor-dark transition">
-                support@ancestorelens.com
+                o.igboerika@alustudent.com
               </a>
               <span className="hidden sm:inline">•</span>
               <a href="tel:+1234567890" className="hover:text-ancestor-dark transition">
