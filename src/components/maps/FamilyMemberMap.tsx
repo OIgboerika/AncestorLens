@@ -171,7 +171,7 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
           icon: customIcon
         })
         
-        // Create popup content
+        // Create popup content with modern card design
         const locationParts = []
         if (member.address) locationParts.push(member.address)
         if (member.city) locationParts.push(member.city)
@@ -184,16 +184,220 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
               ? `${member.coordinates.lat.toFixed(5)}, ${member.coordinates.lng.toFixed(5)}`
               : 'Location not specified')
         
+        // Format gender for display
+        const genderDisplay = member.gender 
+          ? member.gender.charAt(0).toUpperCase() + member.gender.slice(1)
+          : 'Not specified'
+        
+        // Calculate age if birth year is available
+        const currentYear = new Date().getFullYear()
+        const age = member.birthYear 
+          ? `${currentYear - parseInt(member.birthYear)} years old`
+          : null
+        
         const popupContent = `
-          <div class="p-2">
-            <h3 class="font-semibold text-lg">${member.name}</h3>
-            <p class="text-sm text-gray-600">${member.relationship}</p>
-            <p class="text-sm text-gray-500">📍 ${fullLocation}</p>
-            ${member.birthYear ? `<p class="text-sm text-gray-500">Born: ${member.birthYear}</p>` : ''}
+          <div style="
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 12px 12px;
+            border-radius: 16px;
+            padding: 20px;
+            min-width: 280px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            position: relative;
+          ">
+            <!-- Close button -->
+            <button onclick="this.closest('.leaflet-popup').closePopup()" style="
+              position: absolute;
+              top: 12px;
+              right: 12px;
+              background: rgba(255,255,255,0.1);
+              border: none;
+              border-radius: 8px;
+              width: 28px;
+              height: 28px;
+              color: white;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 18px;
+              line-height: 1;
+              transition: all 0.2s;
+            " onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">×</button>
+            
+            <!-- Header with relationship/identifier -->
+            <div style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 12px;
+            ">
+              <span style="
+                color: rgba(255,255,255,0.7);
+                font-size: 13px;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              ">${member.relationship || 'Family Member'}</span>
+              ${member.birthYear ? `<span style="
+                color: rgba(255,255,255,0.5);
+                font-size: 12px;
+              ">Born ${member.birthYear}</span>` : ''}
+            </div>
+            
+            <!-- Main name -->
+            <h3 style="
+              font-size: 24px;
+              font-weight: 700;
+              margin: 0 0 16px 0;
+              color: white;
+              line-height: 1.2;
+            ">${member.name}</h3>
+            
+            <!-- Tags/Pills -->
+            <div style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+              margin-bottom: 20px;
+            ">
+              <span style="
+                background: rgba(255,255,255,0.15);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 500;
+                backdrop-filter: blur(10px);
+              ">${member.role}</span>
+              ${member.gender ? `<span style="
+                background: rgba(255,255,255,0.15);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 500;
+                backdrop-filter: blur(10px);
+              ">${genderDisplay}</span>` : ''}
+            </div>
+            
+            <!-- Divider -->
+            <div style="
+              height: 1px;
+              background: rgba(255,255,255,0.1);
+              margin: 20px 0;
+            "></div>
+            
+            <!-- Details section -->
+            <div style="
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            ">
+              <!-- Location -->
+              <div style="
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+              ">
+                <div style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                  margin-top: 2px;
+                ">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                </div>
+                <div style="flex: 1;">
+                  <div style="
+                    color: rgba(255,255,255,0.9);
+                    font-size: 14px;
+                    font-weight: 500;
+                    margin-bottom: 2px;
+                  ">${fullLocation}</div>
+                  <div style="
+                    color: rgba(255,255,255,0.5);
+                    font-size: 12px;
+                  ">Current Location</div>
+                </div>
+              </div>
+              
+              ${age ? `
+              <!-- Age -->
+              <div style="
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+              ">
+                <div style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                  margin-top: 2px;
+                ">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <div style="flex: 1;">
+                  <div style="
+                    color: rgba(255,255,255,0.9);
+                    font-size: 14px;
+                    font-weight: 500;
+                    margin-bottom: 2px;
+                  ">${age}</div>
+                  <div style="
+                    color: rgba(255,255,255,0.5);
+                    font-size: 12px;
+                  ">Age</div>
+                </div>
+              </div>
+              ` : ''}
+            </div>
+            
+            <!-- Action button -->
+            <div style="
+              margin-top: 20px;
+              padding-top: 16px;
+              border-top: 1px solid rgba(255,255,255,0.1);
+            ">
+              <button onclick="window.location.href='/family-tree/member/${member.id}'" style="
+                width: 100%;
+                background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2);
+                border-radius: 10px;
+                padding: 12px 20px;
+                color: white;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                backdrop-filter: blur(10px);
+              " onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.borderColor='rgba(255,255,255,0.2)'">
+                View Full Details →
+              </button>
+            </div>
           </div>
         `
         
-        marker.bindPopup(popupContent)
+        marker.bindPopup(popupContent, {
+          className: 'modern-family-popup',
+          maxWidth: 320,
+          closeButton: false
+        })
         marker.addTo(map)
         markers.push(marker)
       }
@@ -228,8 +432,23 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         .custom-avatar-marker div {
           z-index: 1000;
         }
-        .leaflet-popup-content-wrapper {
-          border-radius: 8px;
+        .modern-family-popup .leaflet-popup-content-wrapper {
+          background: transparent !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          border-radius: 0 !important;
+        }
+        .modern-family-popup .leaflet-popup-content {
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .modern-family-popup .leaflet-popup-tip {
+          background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        }
+        .modern-family-popup .leaflet-popup-close-button {
+          display: none !important;
         }
       `}</style>
       <div className={`w-full h-96 rounded-lg overflow-hidden ${className}`}>
