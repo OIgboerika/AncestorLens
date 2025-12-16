@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import '../../styles/leaflet.css'
 
 // Fix for default markers in Leaflet with Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -396,7 +397,33 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
         marker.bindPopup(popupContent, {
           className: 'modern-family-popup',
           maxWidth: 320,
-          closeButton: false
+          closeButton: false,
+          autoPan: true,
+          autoPanPadding: [50, 50]
+        })
+        
+        // After binding, update the popup wrapper to remove default styling
+        marker.on('popupopen', function() {
+          setTimeout(() => {
+            const popup = this.getPopup()
+            const element = popup.getElement()
+            if (element) {
+              const wrapper = element.querySelector('.leaflet-popup-content-wrapper') as HTMLElement
+              if (wrapper) {
+                wrapper.classList.add('modern-family-popup-wrapper')
+                wrapper.style.background = 'transparent'
+                wrapper.style.boxShadow = 'none'
+                wrapper.style.padding = '0'
+                wrapper.style.borderRadius = '0'
+                wrapper.style.border = 'none'
+              }
+              const content = element.querySelector('.leaflet-popup-content') as HTMLElement
+              if (content) {
+                content.style.margin = '0'
+                content.style.padding = '0'
+              }
+            }
+          }, 10)
         })
         marker.addTo(map)
         markers.push(marker)
@@ -437,18 +464,27 @@ const FamilyMemberMap = ({ familyMembers, className = '' }: FamilyMemberMapProps
           box-shadow: none !important;
           padding: 0 !important;
           border-radius: 0 !important;
+          border: none !important;
         }
         .modern-family-popup .leaflet-popup-content {
           margin: 0 !important;
           padding: 0 !important;
+          width: auto !important;
+          min-width: 280px !important;
         }
         .modern-family-popup .leaflet-popup-tip {
           background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
           border: 1px solid rgba(255,255,255,0.1) !important;
           box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+          width: 20px !important;
+          height: 20px !important;
         }
         .modern-family-popup .leaflet-popup-close-button {
           display: none !important;
+        }
+        /* Ensure the popup container doesn't have default white background */
+        .leaflet-popup-content-wrapper.modern-family-popup-wrapper {
+          background: transparent !important;
         }
       `}</style>
       <div className={`w-full h-96 rounded-lg overflow-hidden ${className}`}>
