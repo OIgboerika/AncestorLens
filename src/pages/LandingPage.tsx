@@ -579,8 +579,8 @@ const LandingPage = () => {
                 o.igboerika@alustudent.com
               </a>
               <span className="hidden sm:inline">•</span>
-              <a href="tel:+250 792 342 75785" className="hover:text-ancestor-dark transition">
-                +250 792 342 75785
+              <a href="tel:+250 792 402 827" className="hover:text-ancestor-dark transition">
+                +250 792 402 827
               </a>
             </div>
           </div>
