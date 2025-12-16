@@ -9,13 +9,17 @@ interface CardProps {
 
 const Card = ({ children, className = '', hoverable = true, padding = 'md' }: CardProps) => {
   const paddingClasses = {
-    sm: 'p-4',
+    sm: 'p-5',
     md: 'p-6',
     lg: 'p-8'
   }
   
+  const hoverClasses = hoverable 
+    ? 'hover:shadow-xl hover:shadow-gray-300/50 hover:-translate-y-1 transition-all duration-300' 
+    : ''
+  
   return (
-    <div className={`${paddingClasses[padding]} ${hoverable ? 'hover:shadow-md' : ''} card ${className}`}>
+    <div className={`${paddingClasses[padding]} ${hoverClasses} bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 ${className}`}>
       {children}
     </div>
   )

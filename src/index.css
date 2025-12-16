@@ -8,32 +8,50 @@ html {
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans;
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
   }
 }
 
 @layer components {
+  /* Modern Button Styles */
   .btn-primary {
-    @apply bg-ancestor-primary hover:bg-ancestor-dark text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200;
+    @apply bg-ancestor-primary hover:bg-ancestor-dark text-white font-semibold px-6 py-3 rounded-2xl shadow-lg shadow-ancestor-primary/20 hover:shadow-xl hover:shadow-ancestor-primary/30 transition-all duration-300 transform hover:-translate-y-0.5;
   }
   
   .btn-secondary {
-    @apply bg-ancestor-secondary hover:bg-ancestor-accent text-white font-medium px-6 py-2 rounded-lg transition-colors duration-200;
+    @apply bg-ancestor-secondary hover:bg-ancestor-accent text-white font-semibold px-6 py-3 rounded-2xl shadow-lg shadow-ancestor-secondary/20 hover:shadow-xl transition-all duration-300;
   }
   
+  /* Modern Input Styles */
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ancestor-primary focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-ancestor-primary/20 focus:border-ancestor-primary transition-all duration-200 shadow-sm hover:shadow-md focus:shadow-lg;
   }
   
+  /* Modern Card Styles */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200;
+    @apply bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-6 hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-300;
   }
   
+  /* Modern Navigation Link */
   .nav-link {
-    @apply text-gray-600 hover:text-ancestor-primary font-medium transition-colors duration-200;
+    @apply text-gray-600 hover:text-ancestor-primary font-medium transition-all duration-200;
   }
   
   .nav-link.active {
-    @apply text-ancestor-primary;
+    @apply text-ancestor-primary font-semibold;
+  }
+  
+  /* Modern Pill/Tag Styles */
+  .pill {
+    @apply inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200;
+  }
+  
+  .pill-primary {
+    @apply bg-ancestor-primary/10 text-ancestor-primary border-ancestor-primary/20;
+  }
+  
+  /* Modern Badge Styles */
+  .badge {
+    @apply inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
   }
 }
