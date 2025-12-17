@@ -10,6 +10,25 @@ html {
   body {
     @apply bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans antialiased transition-colors duration-200;
   }
+
+  /* Dark mode text overrides for authenticated app */
+  .dark .text-gray-900,
+  .dark .text-gray-800,
+  .dark .text-gray-700 {
+    @apply text-gray-100;
+  }
+
+  .dark .text-gray-600,
+  .dark .text-gray-500,
+  .dark .text-gray-400 {
+    @apply text-gray-300;
+  }
+
+  /* Make ancestor brand text readable on dark backgrounds */
+  .dark .text-ancestor-primary,
+  .dark .text-ancestor-dark {
+    @apply text-white;
+  }
 }
 
 @layer components {
