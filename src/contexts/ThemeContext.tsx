@@ -30,14 +30,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   })
 
   useEffect(() => {
-    // Update document class and localStorage
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
+    // Persist theme preference only; Layout controls where the `dark` class is applied
+    localStorage.setItem('theme', isDark ? 'dark' : 'light')
   }, [isDark])
 
   const toggleTheme = () => {
