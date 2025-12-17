@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Home, TreePine, MapPin, BookOpen, Settings, Menu, X, Archive } from 'lucide-react'
-import ThemeToggle from '../ThemeToggle/ThemeToggle'
 
 const navItems = [
   { name: 'Home', href: '/dashboard', icon: Home },
@@ -36,7 +35,7 @@ export default function Sidebar() {
 
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 shadow-lg z-40 hidden md:flex md:flex-col transition-colors duration-200">
-      <div className="h-20 px-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800">
+      <div className="h-20 px-6 flex items-center border-b border-gray-100 dark:border-gray-800">
         <Link to="/dashboard" className="flex items-center space-x-3 group">
           <div className="w-10 h-10 rounded-xl bg-ancestor-primary/10 dark:bg-ancestor-primary/20 flex items-center justify-center group-hover:bg-ancestor-primary/20 dark:group-hover:bg-ancestor-primary/30 transition-colors">
             <img 
@@ -47,7 +46,6 @@ export default function Sidebar() {
           </div>
           <span className="font-bold text-lg text-ancestor-primary dark:text-ancestor-primary">AncestorLens</span>
         </Link>
-        <ThemeToggle />
       </div>
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {navItems.map(({ name, href, icon: Icon }) => {

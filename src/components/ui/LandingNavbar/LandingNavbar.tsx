@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
-import ThemeToggle from '../ThemeToggle/ThemeToggle'
 
 const LandingNavbar = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -52,7 +51,6 @@ const LandingNavbar = () => {
             </button>
             
             <div className="flex items-center space-x-4 ml-4">
-              <ThemeToggle />
               <Link
                 to="/signup"
                 className="inline-flex items-center justify-center rounded-lg border border-ancestor-primary text-ancestor-primary px-4 py-2 text-sm font-semibold hover:bg-ancestor-primary/10 transition"
@@ -69,8 +67,7 @@ const LandingNavbar = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center gap-2">
-            <ThemeToggle />
+          <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="text-gray-600 dark:text-gray-300 hover:text-ancestor-primary focus:outline-none p-2 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -103,9 +100,6 @@ const LandingNavbar = () => {
                 Contact Us
               </button>
               <div className="pt-2 space-y-2">
-                <div className="flex justify-center pb-2">
-                  <ThemeToggle />
-                </div>
                 <Link
                   to="/signup"
                   className="block w-full text-center px-3 py-2 rounded-md text-base font-medium border border-ancestor-primary text-ancestor-primary hover:bg-ancestor-primary/10 dark:hover:bg-ancestor-primary/20"
